@@ -1,0 +1,105 @@
+// Generated from dog.ceo and thecatapi.com: only large originals (>= 900px wide), so they stay sharp full-bleed.
+// Dev placeholders only. Swap for real storage (MediaService) later.
+
+export const DOG_PHOTOS: Record<string, readonly string[]> = {
+  'Labrador Retriever': [
+    'https://images.dog.ceo/breeds/labrador/fury_02.jpg',
+    'https://images.dog.ceo/breeds/labrador/lucy.jpg',
+    'https://images.dog.ceo/breeds/labrador/img_2752.jpg',
+    'https://images.dog.ceo/breeds/labrador/labrador.jpg',
+  ],
+  'Golden Retriever': [
+    'https://images.dog.ceo/breeds/retriever-golden/joey_20210805_130226.jpg',
+    'https://images.dog.ceo/breeds/retriever-golden/mori_4.jpg',
+    'https://images.dog.ceo/breeds/retriever-golden/nina.jpg',
+    'https://images.dog.ceo/breeds/retriever-golden/pxl_20220311_055548510.mp_2.jpg',
+  ],
+  Beagle: [
+    'https://images.dog.ceo/breeds/beagle/n02088364_18404.jpg',
+    'https://images.dog.ceo/breeds/beagle/1374053345_milo.jpg',
+    'https://images.dog.ceo/breeds/beagle/phoebe.jpg',
+    'https://images.dog.ceo/breeds/beagle/barnaby_2.jpg',
+  ],
+  Corgi: [
+    'https://images.dog.ceo/breeds/corgi-cardigan/n02113186_8794.jpg',
+    'https://images.dog.ceo/breeds/corgi-cardigan/n02113186_1016.jpg',
+  ],
+  Poodle: [],
+  'Siberian Husky': ['https://images.dog.ceo/breeds/husky/enola-blue-2022.jpg'],
+  Pug: [
+    'https://images.dog.ceo/breeds/pug/smallpug.jpg',
+    'https://images.dog.ceo/breeds/pug/whatsapp_image_2023-05-30_at_21.40.58_(1).jpg',
+    'https://images.dog.ceo/breeds/pug/bubbaagain.jpg',
+    'https://images.dog.ceo/breeds/pug/alf2.jpg',
+  ],
+  'French Bulldog': [
+    'https://images.dog.ceo/breeds/bulldog-french/n02108915_10204.jpg',
+    'https://images.dog.ceo/breeds/bulldog-french/vite.jpg',
+  ],
+  'Australian Shepherd': [
+    'https://images.dog.ceo/breeds/australian-shepherd/sadie.jpg',
+    'https://images.dog.ceo/breeds/australian-shepherd/pepper.jpg',
+    'https://images.dog.ceo/breeds/australian-shepherd/pepper2.jpg',
+  ],
+  Dachshund: [
+    'https://images.dog.ceo/breeds/dachshund/daschund-shorthair.jpg',
+    'https://images.dog.ceo/breeds/dachshund/daschund-luna.jpg',
+    'https://images.dog.ceo/breeds/dachshund/dash_dachshund_with_hat.jpg',
+    'https://images.dog.ceo/breeds/dachshund/sadie.jpg',
+  ],
+  'Border Collie': [
+    'https://images.dog.ceo/breeds/collie-border/n02106166_1983.jpg',
+    'https://images.dog.ceo/breeds/collie-border/whiskey1.jpg',
+    'https://images.dog.ceo/breeds/collie-border/zoe.jpg',
+    'https://images.dog.ceo/breeds/collie-border/whiskey_caesar.jpg',
+  ],
+  'Shiba Inu': [
+    'https://images.dog.ceo/breeds/shiba/mamehiko01.jpg',
+    'https://images.dog.ceo/breeds/shiba/kurosuke01.jpg',
+    'https://images.dog.ceo/breeds/shiba/mamehiko02.jpg',
+    'https://images.dog.ceo/breeds/shiba/mamehiko03.jpg',
+  ],
+  Chihuahua: [
+    'https://images.dog.ceo/breeds/chihuahua/sleeping-chester.jpg',
+    'https://images.dog.ceo/breeds/chihuahua/very-tired-chester.jpg',
+    'https://images.dog.ceo/breeds/chihuahua/msdaisy.jpg',
+    'https://images.dog.ceo/breeds/chihuahua/flora.jpg',
+  ],
+  Boxer: [
+    'https://images.dog.ceo/breeds/boxer/28082007167-min.jpg',
+    'https://images.dog.ceo/breeds/boxer/n02108089_1859.jpg',
+  ],
+};
+
+export const CAT_PHOTOS: readonly string[] = [
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/a9a.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/-tm9-znzl.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/v104en-YP.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/9FEol9vDh.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/27r.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/MTgxNzkxMQ.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/cni.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/BbtRK5XT6.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/b0u.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/dai.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/g1j3wRjgx.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/AkdUb5Ddk.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/y9e6zClik.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/dc2.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/VQ_DGs4R8.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/kmvetZsyr.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/s6l9xck-Q.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/acq.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/C0YfrgcOD.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/HJ_7CZ6rA.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/Zi4jfH3c6.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/ts.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/8on.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/cjt.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/8ja.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/1gh.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/-d7GY-cPZ.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/zKO1twSOV.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/TYQKhQ3mn.jpg',
+  'https://s3.us-west-2.amazonaws.com/cdn2.thecatapi.com/images/124.jpg',
+];

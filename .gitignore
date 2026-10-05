@@ -41,3 +41,9 @@ example
 # generated native folders
 /ios
 /android
+
+# design references (third-party screenshots; keep local)
+design-inspo/
+
+# local Claude Code tooling
+.claude/

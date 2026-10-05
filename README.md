@@ -1,56 +1,36 @@
-# Welcome to your Expo app 👋
+# Fetching
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A dating app for people whose pets are family. Expo + React Native + TypeScript.
+Currently runs entirely on mock data (no backend, no real auth).
 
-## Get started
+## Run it on your phone (Expo Go)
+1. Install **Expo Go** from the App Store / Play Store.
+2. `npm install`
+3. `npm start`
+4. Scan the QR code (iOS: Camera app; Android: inside Expo Go). Phone and computer must be on the same Wi-Fi.
+   If that fails, try `npx expo start --tunnel`.
 
-1. Install dependencies
+Simulators: `npm run ios` (needs Xcode) or `npm run android` (needs Android Studio).
 
-   ```bash
-   npm install
-   ```
+## Try the mock world
+You start signed in as "Melody" with a dog, 5 people who liked you, and 3 matches.
+Open **Profile -> Settings** and **long-press the version number** for the Dev Menu:
+switch users, reset data, simulate a like/match/message, or force empty states.
 
-2. Start the app
+## Try onboarding
+Settings -> Log out -> Get started. Any phone/email and any 6-digit code works.
+Log back in later with the same phone/email. To get the seeded demo user (Melody), log in with `melody@example.com`.
+Quit mid-way and relaunch to see it resume. Photos use your real photo library.
 
-   ```bash
-   npx expo start
-   ```
+## Try Discover
+Heart any photo, prompt or pet (optionally add a comment), or tap X to skip. Send a Treat from the like sheet.
+Dev Menu -> Daily limits lets you jump straight to the out-of-likes states.
 
-In the output, you'll find options to open the app in a
+## Scripts
+`npm test` · `npm run typecheck` · `npm run lint` · `npm run format`
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Config
+Copy `.env.example` to `.env` to change the mock center point. `EXPO_PUBLIC_USE_MOCKS=false` is reserved for the future Supabase services.
+Seed photos come from randomuser.me, dog.ceo and thecatapi (network needed); rabbit/bird pets use a bundled tile.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+See `CLAUDE.md` for architecture and conventions.

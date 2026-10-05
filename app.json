@@ -1,18 +1,22 @@
 {
   "expo": {
-    "name": "scaffold",
-    "slug": "scaffold",
-    "version": "1.0.0",
+    "name": "Fetching",
+    "slug": "fetching",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "scaffold",
+    "scheme": "fetching",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Fetching uses your location to show people and pets nearby.",
+        "NSPhotoLibraryUsageDescription": "Fetching needs your photos so you can add pictures of you and your pets."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FAF4EF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -25,13 +29,22 @@
     },
     "plugins": [
       "expo-router",
+      "expo-font",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#FAF4EF",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-image-picker",
+        { "photosPermission": "Fetching needs your photos so you can add pictures of you and your pets." }
+      ],
+      [
+        "expo-location",
+        { "locationWhenInUsePermission": "Fetching uses your location to show people and pets nearby." }
       ]
     ],
     "experiments": {
