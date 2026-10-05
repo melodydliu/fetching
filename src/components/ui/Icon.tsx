@@ -22,7 +22,9 @@ export type IconName =
   | 'plus'
   | 'edit'
   | 'eye'
-  | 'alert';
+  | 'alert'
+  | 'briefcase'
+  | 'compass';
 
 interface IconProps {
   name: IconName;
@@ -146,6 +148,13 @@ export function Icon({ name, size = 24, color, filled = false }: IconProps) {
         <>
           <Circle cx="12" cy="12" r="8.5" {...stroke} />
           <Path d="M12 7.8v5M12 16.2v.1" {...stroke} strokeWidth={2.4} />
+        </>
+      )}
+      {name === 'briefcase' && <Path d="M4.5 8.5h15v10h-15zM9 8.5V6h6v2.5M4.5 13h15" {...stroke} />}
+      {name === 'compass' && (
+        <>
+          <Circle cx="12" cy="12" r="8.5" {...stroke} />
+          <Path d="M15.5 8.5l-2 5-5 2 2-5z" {...stroke} />
         </>
       )}
       {name === 'send' && <Path d="M4 11.5L20 4l-5.5 16-3-6.5z" fill={fill} {...stroke} />}

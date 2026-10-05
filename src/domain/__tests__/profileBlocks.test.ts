@@ -1,6 +1,6 @@
 import { promptById } from '@/config/prompts';
 import { buildSeed } from '@/mocks/seed';
-import { buildProfileSections, flattenSections, likeTargetOf } from '../profileBlocks';
+import { buildProfileSections, flattenSections, heroBlockOf, likeTargetOf } from '../profileBlocks';
 import type { Profile } from '../types';
 
 const { users, pets } = buildSeed();
@@ -126,5 +126,16 @@ describe('likeTargetOf', () => {
       if (b.type === 'prompt') expect(t.id).toBe(b.answer.id);
       if (b.type === 'pet') expect(t.id).toBe(b.pet.id);
     }
+  });
+});
+
+describe('heroBlockOf', () => {
+  it("is the person's first photo, which the person section starts with", () => {
+    const sections = buildProfileSections(profileOf(owner.id));
+    expect(heroBlockOf(sections)).toBe(sections[0]!.blocks[0]);
+  });
+
+  it('is null for an empty profile', () => {
+    expect(heroBlockOf([])).toBeNull();
   });
 });

@@ -112,3 +112,14 @@ export function likeTargetOf(block: ProfileBlock): LikeTarget | null {
       return null;
   }
 }
+
+/**
+ * The block a whole-profile "Like" points at: the first photo (the hero), else the first
+ * likeable thing. Null only for an empty profile.
+ */
+export function heroBlockOf(sections: ProfileSection[]): ProfileBlock | null {
+  const blocks = flattenSections(sections);
+  return (
+    blocks.find((b) => b.type === 'photo') ?? blocks.find((b) => likeTargetOf(b) !== null) ?? null
+  );
+}

@@ -1,7 +1,7 @@
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileView } from '@/components/ProfileView';
 import { Chip } from '@/components/ui/Chip';
-import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
@@ -10,24 +10,33 @@ import { useTheme } from '@/hooks/useTheme';
 
 /** Your own profile, exactly as others see it in Discover. */
 export default function PreviewScreen() {
-  const { spacing } = useTheme();
+  const { colors, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
   const profile = useViewerProfile();
+  const gutter = { paddingHorizontal: spacing.lg };
   return (
-    <Screen scroll>
-      <ScreenHeader title="Preview" back />
-      <View style={{ gap: spacing.lg }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ paddingBottom: insets.bottom + spacing.lg }}
+      contentInsetAdjustmentBehavior="never"
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={[gutter, { paddingTop: insets.top + spacing.md, gap: spacing.lg }]}>
+        <ScreenHeader title="Preview" back />
         <Chip label="This is how others see you" tone="accent" />
-        {profile.data ? (
-          <ProfileView profile={profile.data} />
-        ) : (
-          <>
-            <Skeleton height={480} radius={28} />
-            <Text variant="small" color="textMuted">
-              Loading your profile…
-            </Text>
-          </>
-        )}
       </View>
-    </Screen>
+      {profile.data ? (
+        <View style={{ marginTop: spacing.lg }}>
+          <ProfileView profile={profile.data} />
+        </View>
+      ) : (
+        <View style={[gutter, { gap: spacing.lg }]}>
+          <Skeleton height={480} radius={28} />
+          <Text variant="small" color="textMuted">
+            Loading your profile…
+          </Text>
+        </View>
+      )}
+    </ScrollView>
   );
 }

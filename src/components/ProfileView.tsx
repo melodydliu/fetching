@@ -1,23 +1,27 @@
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { promptById } from '@/config/prompts';
 import { RELATIONSHIP_GOAL_LABELS, SPECIES_LABELS } from '@/config/reference';
 import { ageFromBirthdate } from '@/domain/geo';
+import { summarizePets } from '@/domain/petSummary';
 import type { LikedYou } from '@/domain/matching';
 import {
   buildProfileSections,
+  heroBlockOf,
   likeTargetOf,
   type ProfileBlock,
   type ProfileSection,
-  type ProfileSectionKind,
 } from '@/domain/profileBlocks';
 import type { Pet, Photo, Profile, Tri } from '@/domain/types';
 import { useTheme } from '@/hooks/useTheme';
 import { Chip } from './ui/Chip';
-import { Icon } from './ui/Icon';
+import { Icon, type IconName } from './ui/Icon';
 import { PhotoView } from './ui/PhotoView';
 import { Text } from './ui/Text';
+
+const HERO_ASPECT = 0.9;
 
 interface ProfileViewProps {
   profile: Profile;
@@ -25,39 +29,50 @@ interface ProfileViewProps {
   likedYou?: LikedYou | null;
   /** When set, every photo, prompt and pet gets a labelled "Like" button that calls this. */
   onLikePress?: (block: ProfileBlock) => void;
-  /** Reports where each section starts (relative to this view) so a parent can offer jump tabs. */
-  onSectionLayout?: (kind: ProfileSectionKind, y: number) => void;
+  /** Sits on top of the hero photo, e.g. the daily-likes chips. */
+  heroOverlay?: ReactNode;
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /**
- * A profile as other people see it, in clearly separate parts:
- * the person (photos + personal prompts), then their pets in their own tinted panel.
+ * A profile as other people see it: a full-bleed hero photo and the basics,
+ * then the rest of the person (photos + prompts), then their pets in their own tinted panel.
+ * Renders edge to edge; the caller must not pad it.
  */
 export function ProfileView({
   profile,
   distanceMiles,
   likedYou,
   onLikePress,
-  onSectionLayout,
+  heroOverlay,
 }: ProfileViewProps) {
   const { colors, radii, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
   const { user } = profile;
   const sections = buildProfileSections(profile);
+  const heroBlock = heroBlockOf(sections);
+  const heroUrl = heroBlock?.type === 'photo' ? heroBlock.photo.url : null;
   const age = user.birthdate ? ageFromBirthdate(user.birthdate) : null;
 
-  const basics = [
-    user.basics.job,
-    user.basics.school,
-    user.basics.hometown,
-    user.relationshipGoal ? RELATIONSHIP_GOAL_LABELS[user.relationshipGoal] : null,
+  const heroPets = user.kind === 'pet_owner' ? profile.pets : [];
+  type Fact = { icon: IconName; text: string };
+  const rawFacts: (Fact | null)[] = [
+    heroPets.length > 0 ? { icon: 'paw', text: summarizePets(heroPets) } : null,
+    user.basics.job ? { icon: 'briefcase', text: user.basics.job } : null,
+    user.location.city ? { icon: 'pin', text: user.location.city } : null,
+    user.relationshipGoal
+      ? { icon: 'heart', text: RELATIONSHIP_GOAL_LABELS[user.relationshipGoal] }
+      : null,
     distanceMiles === undefined
       ? null
-      : distanceMiles < 1
-        ? 'Less than a mile away'
-        : `${Math.round(distanceMiles)} miles away`,
-  ].filter((x): x is string => !!x);
+      : {
+          icon: 'compass',
+          text:
+            distanceMiles < 1 ? 'Less than a mile away' : `${Math.round(distanceMiles)} miles away`,
+        },
+  ];
+  const facts = rawFacts.filter((x): x is Fact => !!x);
 
   const describe = (block: ProfileBlock): string => {
     if (block.type === 'photo') return `${user.firstName}'s photo`;
@@ -102,7 +117,7 @@ export function ProfileView({
     );
   };
 
-  const renderPersonBlock = (block: ProfileBlock, index: number) => {
+  const renderPersonBlock = (block: ProfileBlock) => {
     if (block.type === 'photo') {
       return (
         <View key={block.photo.id}>
@@ -114,19 +129,6 @@ export function ProfileView({
                 label={`Photo of ${user.firstName}`}
                 style={styles.photo}
               />
-              {index === 0 && (
-                <View
-                  style={[
-                    styles.nameTag,
-                    { backgroundColor: colors.surface, borderRadius: radii.lg },
-                  ]}
-                >
-                  <Text variant="title">
-                    {user.firstName}
-                    {age !== null ? `, ${age}` : ''}
-                  </Text>
-                </View>
-              )}
             </View>,
           )}
         </View>
@@ -139,25 +141,10 @@ export function ProfileView({
   };
 
   const renderSection = (section: ProfileSection) => {
-    const onLayout = (y: number) => onSectionLayout?.(section.kind, y);
-
     if (section.kind === 'person') {
       return (
-        <View
-          key="person"
-          onLayout={(e) => onLayout(e.nativeEvent.layout.y)}
-          style={{ gap: spacing.md }}
-          accessibilityLabel={section.title}
-        >
-          {section.blocks.slice(0, 1).map((b, i) => renderPersonBlock(b, i))}
-          {basics.length > 0 && (
-            <View style={[styles.wrap, { gap: spacing.sm }]}>
-              {basics.map((b) => (
-                <Chip key={b} label={b} />
-              ))}
-            </View>
-          )}
-          {section.blocks.slice(1).map((b, i) => renderPersonBlock(b, i + 1))}
+        <View key="person" style={{ gap: spacing.md }} accessibilityLabel={section.title}>
+          {section.blocks.filter((b) => b !== heroBlock).map(renderPersonBlock)}
         </View>
       );
     }
@@ -166,7 +153,6 @@ export function ProfileView({
     return (
       <View
         key={section.kind}
-        onLayout={(e) => onLayout(e.nativeEvent.layout.y)}
         style={{
           backgroundColor: colors.primarySoft,
           borderRadius: radii.xl + 8,
@@ -210,18 +196,136 @@ export function ProfileView({
   };
 
   return (
-    <View style={{ gap: spacing.lg }}>
-      {likedYou ? (
-        <Chip label={likedYou.isTreat ? 'Sent you a Treat' : 'Liked you'} tone="accent" />
-      ) : null}
-      {sections.map(renderSection)}
+    <View>
+      <View style={{ aspectRatio: HERO_ASPECT, backgroundColor: colors.surfaceMuted }}>
+        {heroUrl ? (
+          <PhotoView
+            url={heroUrl}
+            label={`Photo of ${user.firstName}`}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, styles.center]}>
+            <Icon name="paw" size={56} color={colors.textSubtle} />
+          </View>
+        )}
+        {heroPets.length > 0 ? <PetBubbles pets={heroPets} /> : null}
+        {/* Keeps the status bar readable on bright photos. */}
+        <View
+          style={[styles.scrim, { height: insets.top + 24, backgroundColor: colors.overlay }]}
+          pointerEvents="none"
+        />
+        {heroOverlay ? (
+          <View
+            style={[
+              styles.heroOverlay,
+              { top: insets.top + spacing.sm, paddingHorizontal: spacing.lg, gap: spacing.sm },
+            ]}
+          >
+            {heroOverlay}
+          </View>
+        ) : null}
+      </View>
+
+      <View
+        style={[
+          styles.sheet,
+          {
+            backgroundColor: colors.background,
+            borderTopLeftRadius: radii.xl + 8,
+            borderTopRightRadius: radii.xl + 8,
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.xl,
+            gap: spacing.xl,
+          },
+        ]}
+      >
+        <View accessible accessibilityLabel={`${user.firstName}${age !== null ? `, ${age}` : ''}`}>
+          {likedYou ? (
+            <View style={{ marginBottom: spacing.sm }}>
+              <Chip label={likedYou.isTreat ? 'Sent you a Treat' : 'Liked you'} tone="accent" />
+            </View>
+          ) : null}
+          <Text variant="display">
+            {user.firstName}
+            {age !== null ? `, ${age}` : ''}
+          </Text>
+        </View>
+
+        {facts.length > 0 && (
+          <View style={[styles.wrap, { columnGap: spacing.md, rowGap: spacing.md, marginTop: -8 }]}>
+            {facts.map((f) => (
+              <View key={f.icon} style={[styles.fact, { gap: spacing.sm }]}>
+                <Icon name={f.icon} size={18} color={colors.textSubtle} />
+                <Text variant="small" color="textMuted" style={{ flex: 1 }}>
+                  {f.text}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {sections.map(renderSection)}
+      </View>
     </View>
   );
 }
 
-/** Labelled "Like" button (heart + word), so it's obvious what it does. */
+const BUBBLE = 72;
+const MAX_BUBBLES = 3;
+
+/** Round pet photos on the hero's bottom-right corner, overlapping like a stack. */
+function PetBubbles({ pets }: { pets: Pet[] }) {
+  const { colors, spacing } = useTheme();
+  const shown = pets.slice(0, MAX_BUBBLES);
+  const extra = pets.length - shown.length;
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Pets: ${pets.map((p) => p.name).join(', ')}`}
+      style={[styles.bubbles, { right: spacing.lg }]}
+    >
+      {shown.map((pet, i) => (
+        <View
+          key={pet.id}
+          style={[
+            styles.bubble,
+            {
+              borderColor: colors.surface,
+              backgroundColor: colors.surfaceMuted,
+              marginLeft: i === 0 ? 0 : -20,
+            },
+          ]}
+        >
+          {pet.photos[0] ? (
+            <PhotoView url={pet.photos[0].url} label={pet.name} style={styles.bubbleImage} />
+          ) : (
+            <View style={[styles.bubbleImage, styles.center]}>
+              <Icon name="paw" size={30} color={colors.textSubtle} />
+            </View>
+          )}
+        </View>
+      ))}
+      {extra > 0 && (
+        <View
+          style={[
+            styles.bubble,
+            styles.center,
+            { borderColor: colors.surface, backgroundColor: colors.primarySoft, marginLeft: -20 },
+          ]}
+        >
+          <Text variant="smallStrong" color="onPrimarySoft">
+            +{extra}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+/** Round heart button; the label is for screen readers only. */
 function LikePill({ label, onPress }: { label: string; onPress: () => void }) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radii } = useTheme();
   return (
     <Pressable
       onPress={() => {
@@ -236,16 +340,12 @@ function LikePill({ label, onPress }: { label: string; onPress: () => void }) {
           backgroundColor: colors.surface,
           borderColor: colors.primary,
           borderRadius: radii.pill,
-          paddingHorizontal: spacing.lg,
           shadowColor: colors.shadow,
           transform: [{ scale: pressed ? 0.95 : 1 }],
         },
       ]}
     >
-      <Icon name="heart" size={22} color={colors.primary} />
-      <Text variant="bodyStrong" color="primary">
-        Like
-      </Text>
+      <Icon name="heart" size={24} color={colors.primary} />
     </Pressable>
   );
 }
@@ -405,13 +505,20 @@ const openToText = (species: string[]) => {
 const styles = StyleSheet.create({
   photoWrap: { overflow: 'hidden' },
   photo: { width: '100%', aspectRatio: 4 / 5 },
-  nameTag: {
-    position: 'absolute',
-    left: 14,
-    bottom: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+  center: { alignItems: 'center', justifyContent: 'center' },
+  scrim: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0.5 },
+  heroOverlay: { position: 'absolute', left: 0, right: 0, alignItems: 'flex-start' },
+  sheet: { marginTop: -40 },
+  bubbles: { position: 'absolute', bottom: 40 + 12, flexDirection: 'row' },
+  bubble: {
+    width: BUBBLE,
+    height: BUBBLE,
+    borderRadius: BUBBLE / 2,
+    borderWidth: 2.5,
+    overflow: 'hidden',
   },
+  bubbleImage: { width: '100%', height: '100%' },
+  fact: { width: '47%', flexDirection: 'row', alignItems: 'center' },
   card: { borderWidth: StyleSheet.hairlineWidth },
   wrap: { flexDirection: 'row', flexWrap: 'wrap' },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -419,10 +526,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 12,
     bottom: 12,
+    width: 48,
     height: 48,
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
     borderWidth: 1.5,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.18,

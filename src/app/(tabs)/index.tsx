@@ -2,19 +2,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import {
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LikeSheet, type LikePreview } from '@/components/LikeSheet';
 import { ProfileView } from '@/components/ProfileView';
-import { SectionTabs } from '@/components/SectionTabs';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -25,9 +17,9 @@ import { Text } from '@/components/ui/Text';
 import { promptById } from '@/config/prompts';
 import {
   buildProfileSections,
+  heroBlockOf,
   likeTargetOf,
   type ProfileBlock,
-  type ProfileSectionKind,
 } from '@/domain/profileBlocks';
 import type { ID, LikeTarget } from '@/domain/types';
 import { useCandidates, useLikeQuota, useViewerId } from '@/hooks/queries';
@@ -52,7 +44,7 @@ function resetsIn(iso: string | undefined): string {
 }
 
 export default function DiscoverScreen() {
-  const { colors, radii, spacing, shadows } = useTheme();
+  const { colors, radii, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   const viewerId = useViewerId();
   const { likes, discovery } = useServices();
@@ -65,18 +57,9 @@ export default function DiscoverScreen() {
   const [handled, setHandled] = useState<ReadonlySet<ID>>(new Set());
   const [liking, setLiking] = useState<LikeDraft | null>(null);
 
-  // Section tabs: where each part of the current profile starts, and which one is in view.
-  const contentY = useRef(0);
-  const sectionY = useRef<Partial<Record<ProfileSectionKind, number>>>({});
-  const [activeTab, setActiveTab] = useState<{ forId: ID | undefined; kind: ProfileSectionKind }>({
-    forId: undefined,
-    kind: 'person',
-  });
-
   const list = candidates.data;
   const current = list?.find((c) => !handled.has(c.user.id));
-  const sections = current ? buildProfileSections(current) : [];
-  const activeKind = activeTab.forId === current?.user.id ? activeTab.kind : 'person';
+  const heroBlock = current ? heroBlockOf(buildProfileSections(current)) : null;
   const markHandled = (id: ID) => setHandled((prev) => new Set(prev).add(id));
 
   // Ran through everyone we fetched: pull the next batch, then forget the local "handled" set.
@@ -92,24 +75,6 @@ export default function DiscoverScreen() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [currentId]);
-
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const id = current?.user.id;
-    if (!id) return;
-    const y = e.nativeEvent.contentOffset.y + 140;
-    let kind: ProfileSectionKind = 'person';
-    for (const section of sections) {
-      const top = contentY.current + (sectionY.current[section.kind] ?? Infinity);
-      if (y >= top) kind = section.kind;
-    }
-    setActiveTab((prev) => (prev.forId === id && prev.kind === kind ? prev : { forId: id, kind }));
-  };
-
-  const jumpTo = (kind: ProfileSectionKind) => {
-    const y = kind === 'person' ? 0 : contentY.current + (sectionY.current[kind] ?? 0) - 64;
-    scrollRef.current?.scrollTo({ y: Math.max(0, y), animated: true });
-    setActiveTab({ forId: current?.user.id, kind });
-  };
 
   const skip = () => {
     if (!current || !viewerId) return;
@@ -183,64 +148,28 @@ export default function DiscoverScreen() {
   const q = quota.data;
   const outOfEverything = !!q && q.likesRemaining === 0 && !q.treatAvailable;
   const barBottom = Math.max(insets.bottom, 12);
+  const padded = { paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.lg };
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={32}
-        stickyHeaderIndices={current && sections.length > 1 ? [1] : undefined}
         contentContainerStyle={{
-          paddingTop: insets.top + spacing.md,
-          paddingHorizontal: spacing.lg,
-          paddingBottom: TAB_BAR_CLEARANCE + insets.bottom + 104,
-          gap: spacing.md,
+          paddingBottom: TAB_BAR_CLEARANCE + insets.bottom + 120,
         }}
       >
-        <View style={{ gap: spacing.sm }}>
-          <Text variant="titleItalic">Discover</Text>
-          <View style={[styles.chips, { gap: spacing.sm }]}>
-            {q ? (
-              <>
-                <Chip
-                  label={
-                    q.likesRemaining === 1
-                      ? '1 like left today'
-                      : `${q.likesRemaining} likes left today`
-                  }
-                  tone={q.likesRemaining > 0 ? 'accent' : 'neutral'}
-                />
-                <Chip
-                  label={q.treatAvailable ? 'Treat ready' : 'Treat used'}
-                  tone={q.treatAvailable ? 'sage' : 'neutral'}
-                />
-              </>
-            ) : (
-              <Skeleton width={150} height={26} radius={13} />
-            )}
-          </View>
-          {q && q.likesRemaining === 0 && q.treatAvailable && (
-            <Text variant="small" color="textMuted" accessibilityLiveRegion="polite">
-              You&apos;re out of likes for today, but you can still send a Treat.
-            </Text>
-          )}
-        </View>
-
-        {current && sections.length > 1 ? (
-          <SectionTabs sections={sections} active={activeKind} onSelect={jumpTo} />
-        ) : null}
-
         {candidates.isPending || (q === undefined && quota.isPending) ? (
-          <View style={{ gap: spacing.md }}>
+          <View style={[padded, { gap: spacing.md }]}>
             <Skeleton height={460} radius={radii.xl} />
             <Skeleton height={120} radius={radii.xl} />
           </View>
         ) : candidates.isError ? (
-          <ErrorState onRetry={() => void candidates.refetch()} />
+          <View style={padded}>
+            <ErrorState onRetry={() => void candidates.refetch()} />
+          </View>
         ) : outOfEverything ? (
-          <View style={styles.emptyWrap}>
+          <View style={[styles.emptyWrap, padded]}>
             <EmptyState
               illustration="tennis-ball"
               title="You're out of likes for today"
@@ -251,11 +180,11 @@ export default function DiscoverScreen() {
           </View>
         ) : !current ? (
           list && list.length > 0 ? (
-            <View style={{ gap: spacing.md }}>
+            <View style={padded}>
               <Skeleton height={460} radius={radii.xl} />
             </View>
           ) : (
-            <View style={styles.emptyWrap}>
+            <View style={[styles.emptyWrap, padded]}>
               <EmptyState
                 illustration="tennis-ball"
                 title="You've seen everyone nearby"
@@ -268,66 +197,63 @@ export default function DiscoverScreen() {
             </View>
           )
         ) : (
-          <Animated.View
-            key={current.user.id}
-            entering={FadeIn.duration(250)}
-            onLayout={(e) => {
-              contentY.current = e.nativeEvent.layout.y;
-            }}
-          >
+          <Animated.View key={current.user.id} entering={FadeIn.duration(250)}>
             <ProfileView
               profile={current}
               distanceMiles={current.distanceMiles}
               likedYou={current.likedYou}
               onLikePress={openLike}
-              onSectionLayout={(kind, y) => {
-                sectionY.current[kind] = y;
-              }}
+              heroOverlay={
+                q ? (
+                  <>
+                    <View style={[styles.chips, { gap: spacing.sm }]}>
+                      <Chip
+                        label={
+                          q.likesRemaining === 1
+                            ? '1 like left today'
+                            : `${q.likesRemaining} likes left today`
+                        }
+                        tone={q.likesRemaining > 0 ? 'accent' : 'neutral'}
+                      />
+                      <Chip
+                        label={q.treatAvailable ? 'Treat ready' : 'Treat used'}
+                        tone={q.treatAvailable ? 'sage' : 'neutral'}
+                      />
+                    </View>
+                    {q.likesRemaining === 0 && q.treatAvailable && (
+                      <Text
+                        variant="small"
+                        style={[
+                          styles.note,
+                          { backgroundColor: colors.surface, borderRadius: radii.md },
+                        ]}
+                        accessibilityLiveRegion="polite"
+                      >
+                        You&apos;re out of likes for today, but you can still send a Treat.
+                      </Text>
+                    )}
+                  </>
+                ) : null
+              }
             />
           </Animated.View>
         )}
       </ScrollView>
 
-      {current && !outOfEverything && (
-        <View
-          style={[
-            styles.actionBar,
-            shadows.floating,
-            {
-              bottom: barBottom + 76,
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              shadowColor: colors.shadow,
-              borderRadius: radii.xl,
-            },
-          ]}
+      {current && heroBlock && !outOfEverything && (
+        <Animated.View
+          entering={FadeIn.duration(150)}
+          exiting={FadeOut.duration(150)}
+          style={[styles.floatBar, { bottom: barBottom + 76 }]}
         >
-          <Pressable
-            onPress={skip}
-            accessibilityRole="button"
-            accessibilityLabel={`Pass on ${current.user.firstName}`}
-            accessibilityHint="Skips this profile and shows the next one"
-            style={({ pressed }) => [
-              styles.pass,
-              {
-                borderColor: colors.border,
-                backgroundColor: colors.surfaceMuted,
-                borderRadius: radii.pill,
-                opacity: pressed ? 0.8 : 1,
-              },
-            ]}
-          >
-            <Icon name="x" size={22} color={colors.text} />
-            <Text variant="bodyStrong">Pass</Text>
-          </Pressable>
-          <Text variant="small" color="textMuted" style={styles.hint}>
-            Tap{' '}
-            <Text variant="smallStrong" color="primary">
-              ♡ Like
-            </Text>{' '}
-            on any photo, prompt or pet you love.
-          </Text>
-        </View>
+          <FloatButton icon="x" label={`Pass on ${current.user.firstName}`} onPress={skip} />
+          <FloatButton
+            icon="heart"
+            primary
+            label={`Like ${current.user.firstName}`}
+            onPress={() => openLike(heroBlock)}
+          />
+        </Animated.View>
       )}
 
       <LikeSheet
@@ -350,23 +276,53 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   emptyWrap: { minHeight: 480 },
-  actionBar: {
+  note: { paddingHorizontal: 12, paddingVertical: 8, overflow: 'hidden' },
+  floatBar: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    alignSelf: 'center',
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 8,
-    borderWidth: StyleSheet.hairlineWidth,
+    gap: 24,
   },
-  pass: {
-    height: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 18,
-    borderWidth: 1.5,
-  },
-  hint: { flex: 1 },
+  floatButton: { width: 84, height: 84, alignItems: 'center', justifyContent: 'center' },
 });
+
+function FloatButton({
+  icon,
+  label,
+  primary,
+  onPress,
+}: {
+  icon: 'x' | 'heart';
+  label: string;
+  primary?: boolean;
+  onPress: () => void;
+}) {
+  const { colors, radii, shadows } = useTheme();
+  return (
+    <Pressable
+      onPress={() => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        styles.floatButton,
+        shadows.floating,
+        {
+          borderRadius: radii.pill,
+          backgroundColor: primary ? colors.primary : colors.surface,
+          shadowColor: colors.shadow,
+          transform: [{ scale: pressed ? 0.94 : 1 }],
+        },
+      ]}
+    >
+      <Icon
+        name={icon}
+        size={36}
+        color={primary ? colors.onPrimary : colors.textMuted}
+        filled={primary}
+      />
+    </Pressable>
+  );
+}
