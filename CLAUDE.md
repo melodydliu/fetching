@@ -60,6 +60,7 @@ All in `src/domain/matching/` (pure, no UI or services). Every weight lives in `
 - `MockDb`/`discovery.ts` just call `buildFeed`. Seeded Likes You/Matches are drawn only from people who pass the viewer's hard filters.
 - Likes: `LikeRepository.send` enforces daily limit + one Treat/day + no duplicate likes; Dev Menu -> Daily limits overrides quota for testing.
 - Profile layout (`ProfileView`): full-bleed hero photo (+ pet photo bubbles bottom-right), then name/age, a facts grid (pets summary, job, city, goal, distance), then photos/prompts/pets. Skip and Like are a floating pair in Discover (`app/(tabs)/index.tsx`); the Like opens the sheet for the hero photo. Each photo/prompt/pet still has its own icon-only heart. Render it edge to edge (no parent padding).
+- Profile content: `user.relationshipGoals` is multi-select (empty = unknown/neutral; any overlap counts in matching). Prompts: 1-10 (`config.minPromptAnswers`/`maxPromptAnswers`). Person photos can carry a caption (`PhotoGrid captions`, `CaptionModal`); pet photos don't yet.
 - Preferences UI doesn't exist until Phase 4, so everyone runs on defaults (age = yours -8/+10, 25 miles).
 
 ## Mock accounts

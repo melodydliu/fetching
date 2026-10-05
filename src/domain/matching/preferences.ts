@@ -27,10 +27,8 @@ export function preferenceChecks(owner: Profile, other: Profile): PreferenceChec
     {
       rule: 'relationshipGoals',
       set: prefs.relationshipGoals.length > 0,
-      known: other.user.relationshipGoal !== undefined,
-      satisfied:
-        other.user.relationshipGoal !== undefined &&
-        prefs.relationshipGoals.includes(other.user.relationshipGoal),
+      known: other.user.relationshipGoals.length > 0,
+      satisfied: other.user.relationshipGoals.some((g) => prefs.relationshipGoals.includes(g)),
     },
     {
       rule: 'show',

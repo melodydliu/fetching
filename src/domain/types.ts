@@ -108,7 +108,8 @@ export interface User {
   gender: Gender;
   interestedIn: Gender[];
   location: Location;
-  relationshipGoal?: RelationshipGoal;
+  /** What they're looking for; they can pick several. Empty = not said (neutral when matching). */
+  relationshipGoals: RelationshipGoal[];
   basics: Basics;
   photos: Photo[];
   promptAnswers: PromptAnswer[];

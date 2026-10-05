@@ -14,6 +14,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { moveItem } from '@/domain/list';
 import type { Photo } from '@/domain/types';
 import { useTheme } from '@/hooks/useTheme';
+import { CaptionModal } from './CaptionModal';
 import { Icon } from './ui/Icon';
 import { PhotoView } from './ui/PhotoView';
 import { Text } from './ui/Text';
@@ -41,6 +42,8 @@ interface PhotoGridProps {
   noun?: string;
   /** Hide Remove once this many photos remain (e.g. the 3-photo minimum when editing). */
   minToKeep?: number;
+  /** Tap a photo to add or edit its caption. */
+  captions?: boolean;
 }
 
 /**
@@ -55,11 +58,13 @@ export function PhotoGrid({
   adding,
   noun = 'photo',
   minToKeep = 0,
+  captions = false,
 }: PhotoGridProps) {
   const { colors, radii } = useTheme();
   const [width, setWidth] = useState(0);
   const activeIndex = useSharedValue(-1);
   const hoverIndex = useSharedValue(-1);
+  const [captioningId, setCaptioningId] = useState<string | null>(null);
 
   const tileW = width > 0 ? (width - GAP * (COLUMNS - 1)) / COLUMNS : 0;
   const geometry: Geometry = { tileW, tileH: (tileW * 4) / 3, rows: Math.ceil(max / COLUMNS) };
@@ -75,6 +80,10 @@ export function PhotoGrid({
   };
 
   const remove = (id: string) => onChange(photos.filter((p) => p.id !== id));
+  const saveCaption = (caption: string | undefined) => {
+    onChange(photos.map((p) => (p.id === captioningId ? { ...p, caption } : p)));
+    setCaptioningId(null);
+  };
 
   return (
     <View
@@ -140,8 +149,16 @@ export function PhotoGrid({
             onRemove={() => remove(photo.id)}
             noun={noun}
             canRemove={photos.length > minToKeep}
+            onCaptionPress={captions ? () => setCaptioningId(photo.id) : undefined}
           />
         ))}
+      {captions && (
+        <CaptionModal
+          photo={photos.find((p) => p.id === captioningId) ?? null}
+          onSave={saveCaption}
+          onClose={() => setCaptioningId(null)}
+        />
+      )}
     </View>
   );
 }
@@ -157,6 +174,7 @@ interface TileProps {
   onRemove: () => void;
   noun: string;
   canRemove: boolean;
+  onCaptionPress?: () => void;
 }
 
 function DraggableTile({
@@ -170,6 +188,7 @@ function DraggableTile({
   onRemove,
   noun,
   canRemove,
+  onCaptionPress,
 }: TileProps) {
   const { colors, radii } = useTheme();
   const dx = useSharedValue(0);
@@ -252,16 +271,22 @@ function DraggableTile({
       <Animated.View
         accessible
         accessibilityLabel={`${noun} ${position}${index === 0 ? ', main' : ''}`}
-        accessibilityHint="Long-press and drag to reorder"
+        accessibilityHint={
+          photo.caption
+            ? `Caption: ${photo.caption}. Long-press and drag to reorder`
+            : 'Long-press and drag to reorder'
+        }
         accessibilityActions={[
           ...(index > 0 ? [{ name: 'moveEarlier', label: 'Move earlier' }] : []),
           ...(index < count - 1 ? [{ name: 'moveLater', label: 'Move later' }] : []),
+          ...(onCaptionPress ? [{ name: 'caption', label: 'Edit caption' }] : []),
           ...(canRemove ? [{ name: 'remove', label: `Remove ${noun}` }] : []),
         ]}
         onAccessibilityAction={(e) => {
           if (e.nativeEvent.actionName === 'moveEarlier') onReorder(index, index - 1);
           if (e.nativeEvent.actionName === 'moveLater') onReorder(index, index + 1);
           if (e.nativeEvent.actionName === 'remove' && canRemove) onRemove();
+          if (e.nativeEvent.actionName === 'caption') onCaptionPress?.();
         }}
         style={[
           {
@@ -286,6 +311,34 @@ function DraggableTile({
             style={{ width: tileW, height: tileH }}
           />
         </View>
+        {onCaptionPress && (
+          <Pressable
+            onPress={onCaptionPress}
+            accessibilityRole="button"
+            accessibilityLabel={photo.caption ? 'Edit caption' : 'Add caption'}
+            style={[
+              StyleSheet.absoluteFill,
+              { borderRadius: radii.md, justifyContent: 'flex-end' },
+            ]}
+          >
+            {photo.caption ? (
+              <View style={[styles.captionBar, { backgroundColor: colors.overlay }]}>
+                <Text
+                  variant="caption"
+                  numberOfLines={2}
+                  style={{ flex: 1, color: colors.onPrimary }}
+                >
+                  {photo.caption}
+                </Text>
+                <Icon name="edit" size={14} color={colors.onPrimary} />
+              </View>
+            ) : (
+              <View style={[styles.addCaption, { backgroundColor: colors.surface }]}>
+                <Icon name="edit" size={14} color={colors.text} />
+              </View>
+            )}
+          </Pressable>
+        )}
         {index === 0 && (
           <View style={[styles.badge, { backgroundColor: colors.accent }]}>
             <Text variant="caption" color="onAccent">
@@ -311,10 +364,28 @@ function DraggableTile({
 
 const styles = StyleSheet.create({
   empty: { borderWidth: 2, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  captionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: 6,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+  },
+  addCaption: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   badge: {
     position: 'absolute',
     left: 6,
-    bottom: 6,
+    top: 6,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,

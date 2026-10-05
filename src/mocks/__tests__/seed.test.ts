@@ -51,12 +51,13 @@ describe('seed data', () => {
     });
   });
 
-  it('gives each user 3–6 photos and exactly 3 answered, valid prompts', () => {
+  it('gives each user 3–6 photos and 1–10 answered, valid prompts', () => {
     const promptIds = new Set(PROMPTS.map((p) => p.id));
     users.forEach((u) => {
       expect(u.photos.length).toBeGreaterThanOrEqual(config.minPhotos);
       expect(u.photos.length).toBeLessThanOrEqual(config.maxPhotos);
-      expect(u.promptAnswers).toHaveLength(config.minPromptAnswers);
+      expect(u.promptAnswers.length).toBeGreaterThanOrEqual(config.minPromptAnswers);
+      expect(u.promptAnswers.length).toBeLessThanOrEqual(config.maxPromptAnswers);
       u.promptAnswers.forEach((a) => expect(promptIds.has(a.promptId)).toBe(true));
     });
   });

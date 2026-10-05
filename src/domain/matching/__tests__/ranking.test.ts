@@ -51,24 +51,34 @@ describe('recencyScore', () => {
 
 describe('goalsScore', () => {
   it('rewards the same goal, penalizes different, and is neutral when unknown', () => {
-    const v = makeViewer({ relationshipGoal: 'long_term' });
-    expect(goalsScore(v, makeCandidate({ relationshipGoal: 'long_term' }))).toBe(100);
-    expect(goalsScore(v, makeCandidate({ relationshipGoal: 'something_casual' }))).toBe(20);
-    expect(goalsScore(v, makeCandidate({ relationshipGoal: undefined }))).toBe(50);
+    const v = makeViewer({ relationshipGoals: ['long_term'] });
+    expect(goalsScore(v, makeCandidate({ relationshipGoals: ['long_term'] }))).toBe(100);
+    expect(goalsScore(v, makeCandidate({ relationshipGoals: ['something_casual'] }))).toBe(20);
+    expect(goalsScore(v, makeCandidate({ relationshipGoals: [] }))).toBe(50);
     expect(
       goalsScore(
-        makeViewer({ relationshipGoal: undefined }),
-        makeCandidate({ relationshipGoal: 'long_term' }),
+        makeViewer({ relationshipGoals: [] }),
+        makeCandidate({ relationshipGoals: ['long_term'] }),
       ),
     ).toBe(50);
   });
 
   it('counts a goal the viewer listed in preferences as shared', () => {
     const v = makeViewer({
-      relationshipGoal: 'long_term',
+      relationshipGoals: ['long_term'],
       preferences: { ...makeViewer().user.preferences, relationshipGoals: ['friends_first'] },
     });
-    expect(goalsScore(v, makeCandidate({ relationshipGoal: 'friends_first' }))).toBe(100);
+    expect(goalsScore(v, makeCandidate({ relationshipGoals: ['friends_first'] }))).toBe(100);
+  });
+
+  it('scores 100 when any of several goals overlap, 20 when none do', () => {
+    const v = makeViewer({ relationshipGoals: ['long_term', 'friends_first'] });
+    expect(
+      goalsScore(v, makeCandidate({ relationshipGoals: ['something_casual', 'friends_first'] })),
+    ).toBe(100);
+    expect(
+      goalsScore(v, makeCandidate({ relationshipGoals: ['something_casual', 'not_sure'] })),
+    ).toBe(20);
   });
 });
 
@@ -122,8 +132,8 @@ describe('rankCandidate', () => {
 
   it('uses neutral values rather than zero for missing signals', () => {
     const { parts } = rank(
-      makeViewer({ relationshipGoal: undefined }),
-      makeCandidate({ relationshipGoal: undefined }),
+      makeViewer({ relationshipGoals: [] }),
+      makeCandidate({ relationshipGoals: [] }),
     );
     expect(parts.goals).toBe(MATCHING_CONFIG.rank.neutral);
     expect(parts.preferences).toBe(MATCHING_CONFIG.rank.neutral);

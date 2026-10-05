@@ -31,6 +31,7 @@ export function createMockAuth(db: MockDb): AuthService {
           birthdate: '',
           gender: 'woman',
           interestedIn: [],
+          relationshipGoals: [],
           location: { ...config.mockCenter },
           basics: {},
           photos: [],

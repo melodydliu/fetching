@@ -28,18 +28,15 @@ interface PromptEditorProps {
   onChange: (answers: PromptAnswer[]) => void;
   /** Animal lovers don't see pet prompts. */
   kind: AccountKind;
-  slots?: number;
 }
 
 type Editing = { index: number; promptId: string | null; text: string };
 
-/** Three prompt slots. Tap one to pick a prompt, then write the answer. */
-export function PromptEditor({
-  answers,
-  onChange,
-  kind,
-  slots = config.minPromptAnswers,
-}: PromptEditorProps) {
+/**
+ * Up to `maxPromptAnswers` prompts, at least `minPromptAnswers`. Tap one to edit it, or the
+ * dashed slot to add another: pick a prompt, then write the answer.
+ */
+export function PromptEditor({ answers, onChange, kind }: PromptEditorProps) {
   const { colors, radii, spacing } = useTheme();
   const [editing, setEditing] = useState<Editing | null>(null);
 
@@ -69,7 +66,7 @@ export function PromptEditor({
 
   return (
     <View style={{ gap: spacing.md }}>
-      {Array.from({ length: slots }, (_, i) => {
+      {Array.from({ length: Math.min(answers.length + 1, config.maxPromptAnswers) }, (_, i) => {
         const answer = answers[i];
         const prompt = answer && promptById(answer.promptId);
         return (
@@ -105,7 +102,7 @@ export function PromptEditor({
               <View style={styles.addRow}>
                 <Icon name="plus" size={20} color={colors.primary} />
                 <Text variant="bodyStrong" color="primary">
-                  Select a prompt
+                  {answers.length === 0 ? 'Select a prompt' : 'Add another prompt'}
                 </Text>
               </View>
             )}
@@ -117,7 +114,9 @@ export function PromptEditor({
         editing={editing}
         kind={kind}
         usedIds={answers.map((a, i) => (i === editing?.index ? '' : a.promptId))}
-        canRemove={!!editing && !!answers[editing.index]}
+        canRemove={
+          !!editing && !!answers[editing.index] && answers.length > config.minPromptAnswers
+        }
         onChange={setEditing}
         onSave={save}
         onRemove={() => editing && remove(editing.index)}

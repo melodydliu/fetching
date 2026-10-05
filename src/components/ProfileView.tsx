@@ -53,6 +53,7 @@ export function ProfileView({
   const sections = buildProfileSections(profile);
   const heroBlock = heroBlockOf(sections);
   const heroUrl = heroBlock?.type === 'photo' ? heroBlock.photo.url : null;
+  const heroCaption = heroBlock?.type === 'photo' ? heroBlock.photo.caption : undefined;
   const age = user.birthdate ? ageFromBirthdate(user.birthdate) : null;
 
   const heroPets = user.kind === 'pet_owner' ? profile.pets : [];
@@ -61,8 +62,11 @@ export function ProfileView({
     heroPets.length > 0 ? { icon: 'paw', text: summarizePets(heroPets) } : null,
     user.basics.job ? { icon: 'briefcase', text: user.basics.job } : null,
     user.location.city ? { icon: 'pin', text: user.location.city } : null,
-    user.relationshipGoal
-      ? { icon: 'heart', text: RELATIONSHIP_GOAL_LABELS[user.relationshipGoal] }
+    user.relationshipGoals.length > 0
+      ? {
+          icon: 'heart',
+          text: user.relationshipGoals.map((g) => RELATIONSHIP_GOAL_LABELS[g]).join(', '),
+        }
       : null,
     distanceMiles === undefined
       ? null
@@ -129,6 +133,9 @@ export function ProfileView({
                 label={`Photo of ${user.firstName}`}
                 style={styles.photo}
               />
+              {block.photo.caption ? (
+                <Caption text={block.photo.caption} style={styles.photoCaption} />
+              ) : null}
             </View>,
           )}
         </View>
@@ -209,6 +216,7 @@ export function ProfileView({
             <Icon name="paw" size={56} color={colors.textSubtle} />
           </View>
         )}
+        {heroCaption ? <Caption text={heroCaption} style={styles.heroCaption} /> : null}
         {heroPets.length > 0 ? <PetBubbles pets={heroPets} /> : null}
         {/* Keeps the status bar readable on bright photos. */}
         <View
@@ -267,6 +275,20 @@ export function ProfileView({
 
         {sections.map(renderSection)}
       </View>
+    </View>
+  );
+}
+
+/** A photo's caption on a translucent chip, sitting over the photo's bottom-left. */
+function Caption({ text, style }: { text: string; style: object }) {
+  const { colors, radii } = useTheme();
+  return (
+    <View
+      style={[styles.caption, { backgroundColor: colors.overlay, borderRadius: radii.md }, style]}
+    >
+      <Text variant="small" numberOfLines={3} style={{ color: colors.onPrimary }}>
+        {text}
+      </Text>
     </View>
   );
 }
@@ -509,6 +531,9 @@ const styles = StyleSheet.create({
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0.5 },
   heroOverlay: { position: 'absolute', left: 0, right: 0, alignItems: 'flex-start' },
   sheet: { marginTop: -40 },
+  caption: { position: 'absolute', paddingHorizontal: 12, paddingVertical: 8 },
+  photoCaption: { left: 12, bottom: 12, right: 12 + 48 + 12 },
+  heroCaption: { left: 16, bottom: 40 + 12, maxWidth: '50%' },
   bubbles: { position: 'absolute', bottom: 40 + 12, flexDirection: 'row' },
   bubble: {
     width: BUBBLE,

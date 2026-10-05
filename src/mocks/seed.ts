@@ -307,6 +307,13 @@ export function buildSeed(now: Date = NOW): SeedData {
     'not_sure',
   ];
   const usedNames = new Set<string>();
+  /** Most people pick one goal; about a quarter pick a second. */
+  const pickGoals = (): RelationshipGoal[] => {
+    const first = pick(goals);
+    if (!chance(0.25)) return [first];
+    const second = pick(goals);
+    return second === first ? [first] : [first, second];
+  };
 
   for (let i = 0; i < total; i++) {
     const isMe = i === 0;
@@ -401,7 +408,7 @@ export function buildSeed(now: Date = NOW): SeedData {
         ...scatter(rand, isMe ? 0 : config.seedRadiusMiles),
         city: config.mockCenter.city,
       },
-      relationshipGoal: pick(goals),
+      relationshipGoals: pickGoals(),
       basics: { job: pick(JOBS), hometown: pick(HOMETOWNS) },
       photos: selfPhotos,
       promptAnswers: chosen.map((promptId, k) => ({

@@ -16,7 +16,7 @@ export function makeUser(overrides: Partial<User> = {}): User {
     gender: 'man',
     interestedIn: ['woman'],
     location: { lat: 37.7749, lng: -122.4194, city: 'San Francisco' },
-    relationshipGoal: 'long_term',
+    relationshipGoals: ['long_term'],
     basics: { job: 'Nurse' },
     photos: [{ id: `${id}-ph1`, url: 'u1' }],
     promptAnswers: [],

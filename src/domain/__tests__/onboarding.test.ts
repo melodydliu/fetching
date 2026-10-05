@@ -140,7 +140,7 @@ describe('profileCompleteness', () => {
 
   it('flags an empty profile as incomplete', () => {
     const empty: Profile = {
-      user: { ...owner, photos: [], promptAnswers: [], relationshipGoal: undefined, basics: {} },
+      user: { ...owner, photos: [], promptAnswers: [], relationshipGoals: [], basics: {} },
       pets: [],
     };
     const { score, items } = profileCompleteness(empty);

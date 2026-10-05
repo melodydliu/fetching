@@ -112,7 +112,7 @@ export function PromptsStep({ profile, ...step }: StepProps) {
   return (
     <StepLayout
       title="Show your personality"
-      subtitle="Answer 3 prompts. People like specific answers, so be specific."
+      subtitle="Answer at least 1 prompt, up to 10. People like specific answers, so be specific."
       progress={step.progress}
       onBack={step.onBack}
       primaryDisabled={left > 0}

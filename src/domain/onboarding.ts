@@ -150,10 +150,14 @@ export function profileCompleteness(profile: Profile): {
     },
     {
       key: 'prompts',
-      label: `Answer ${config.minPromptAnswers} prompts`,
+      label: 'Answer at least 1 prompt',
       done: user.promptAnswers.length >= config.minPromptAnswers,
     },
-    { key: 'goal', label: 'Share what you’re looking for', done: !!user.relationshipGoal },
+    {
+      key: 'goal',
+      label: 'Share what you’re looking for',
+      done: user.relationshipGoals.length > 0,
+    },
     {
       key: 'basics',
       label: 'Add your job or hometown',

@@ -19,18 +19,18 @@ export interface RankInput {
   likedYou: LikedYou | null;
 }
 
-/** Shared relationship goals, 0–100. Unknown on either side is neutral. */
+/** Any shared relationship goal scores 100, none 20. Unknown on either side is neutral. */
 export function goalsScore(
   viewer: Profile,
   candidate: Profile,
   cfg: MatchingConfig = MATCHING_CONFIG,
 ): number {
-  const theirs = candidate.user.relationshipGoal;
-  const mine = viewer.user.relationshipGoal;
-  if (!theirs) return cfg.rank.neutral;
-  if (viewer.user.preferences.relationshipGoals.includes(theirs)) return 100;
-  if (!mine) return cfg.rank.neutral;
-  return mine === theirs ? 100 : 20;
+  const theirs = candidate.user.relationshipGoals;
+  const mine = viewer.user.relationshipGoals;
+  if (theirs.length === 0) return cfg.rank.neutral;
+  if (theirs.some((g) => viewer.user.preferences.relationshipGoals.includes(g))) return 100;
+  if (mine.length === 0) return cfg.rank.neutral;
+  return theirs.some((g) => mine.includes(g)) ? 100 : 20;
 }
 
 /** Closer is better: 100 at zero miles, 0 at the viewer's maximum distance. */

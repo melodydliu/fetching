@@ -218,9 +218,13 @@ describe('dealbreakers', () => {
       preferences: prefs({ relationshipGoals: ['long_term'] }),
       dealbreakers: flags({ relationshipGoals: true }),
     });
-    expect(run(v, makeCandidate({ relationshipGoal: undefined })).pass).toBe(true);
-    expect(run(v, makeCandidate({ relationshipGoal: 'something_casual' })).pass).toBe(false);
-    expect(run(v, makeCandidate({ relationshipGoal: 'long_term' })).pass).toBe(true);
+    expect(run(v, makeCandidate({ relationshipGoals: [] })).pass).toBe(true);
+    expect(run(v, makeCandidate({ relationshipGoals: ['something_casual'] })).pass).toBe(false);
+    expect(run(v, makeCandidate({ relationshipGoals: ['long_term'] })).pass).toBe(true);
+    // Any one of several goals is enough.
+    expect(
+      run(v, makeCandidate({ relationshipGoals: ['something_casual', 'long_term'] })).pass,
+    ).toBe(true);
   });
 
   it('"my pet isn’t good with cats" excludes anyone with a cat, in any household', () => {
@@ -271,6 +275,6 @@ describe('softPreferenceScore', () => {
 
   it('ignores unknown values instead of counting them as misses', () => {
     const v = makeViewer({ preferences: prefs({ relationshipGoals: ['long_term'] }) });
-    expect(softPreferenceScore(v, makeCandidate({ relationshipGoal: undefined }))).toBeNull();
+    expect(softPreferenceScore(v, makeCandidate({ relationshipGoals: [] }))).toBeNull();
   });
 });

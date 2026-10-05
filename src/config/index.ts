@@ -29,7 +29,9 @@ export const config = {
   maxAge: 99,
   minPhotos: 3,
   maxPhotos: 6,
+  maxCaptionLength: 80,
   minPetPhotosForOwner: 3,
   minPetPhotos: 3,
-  minPromptAnswers: 3,
+  minPromptAnswers: 1,
+  maxPromptAnswers: 10,
 } as const;

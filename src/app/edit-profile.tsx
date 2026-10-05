@@ -110,12 +110,13 @@ function EditForm({ profile }: { profile: Profile }) {
     <View>
       <Section
         title="Photos"
-        hint={`${config.minPhotos}–${config.maxPhotos} photos. Hold and drag to reorder.`}
+        hint={`${config.minPhotos}–${config.maxPhotos} photos. Tap one to add a caption. Hold and drag to reorder.`}
       >
         <PhotoGrid
           photos={user.photos}
           max={config.maxPhotos}
           minToKeep={config.minPhotos}
+          captions
           adding={adding}
           onAddPress={() => void addPhotos()}
           onChange={(photos) => void updateUser({ photos })}
@@ -156,15 +157,16 @@ function EditForm({ profile }: { profile: Profile }) {
         </View>
       </Section>
 
-      <Section title="Looking for">
+      <Section title="Looking for" hint="Pick all that apply.">
         <ChoiceChips
+          multiple
           label="Looking for"
           options={(Object.keys(RELATIONSHIP_GOAL_LABELS) as RelationshipGoal[]).map((g) => ({
             value: g,
             label: RELATIONSHIP_GOAL_LABELS[g],
           }))}
-          value={user.relationshipGoal ? [user.relationshipGoal] : []}
-          onChange={([relationshipGoal]) => void updateUser({ relationshipGoal })}
+          value={user.relationshipGoals}
+          onChange={(relationshipGoals) => void updateUser({ relationshipGoals })}
         />
       </Section>
 

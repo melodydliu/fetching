@@ -27,7 +27,7 @@ export function PhotosStep({ profile, ...step }: StepProps) {
   return (
     <StepLayout
       title="Add your best photos"
-      subtitle={`At least ${config.minPhotos}. Your first photo is your main one. Hold and drag to reorder.`}
+      subtitle={`At least ${config.minPhotos}. Your first photo is your main one. Tap a photo to add a caption, hold and drag to reorder.`}
       progress={step.progress}
       onBack={step.onBack}
       primaryDisabled={photos.length < config.minPhotos}
@@ -36,6 +36,7 @@ export function PhotosStep({ profile, ...step }: StepProps) {
       <PhotoGrid
         photos={photos}
         max={config.maxPhotos}
+        captions
         adding={adding}
         onAddPress={() => void add()}
         onChange={(next) => void updateUser({ photos: next })}

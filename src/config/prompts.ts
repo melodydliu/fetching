@@ -1,6 +1,6 @@
 import type { Prompt } from '@/domain/types';
 
-/** Prompt catalog. Users pick and answer `config.minPromptAnswers` of these. */
+/** Prompt catalog. Users answer between `config.minPromptAnswers` and `config.maxPromptAnswers` of these. */
 export const PROMPTS: readonly Prompt[] = [
   // Pet prompts (kept species-neutral so they work for every household)
   { id: 'pet-love-language', category: 'pet', text: "My pet's love language is…" },

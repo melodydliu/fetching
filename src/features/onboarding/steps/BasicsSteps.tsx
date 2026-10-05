@@ -249,24 +249,27 @@ export function LocationStep({ profile, ...step }: StepProps) {
 }
 
 export function GoalStep({ profile, ...step }: StepProps) {
-  const [goal, setGoal] = useState<RelationshipGoal | undefined>(profile.user.relationshipGoal);
+  const [goals, setGoals] = useState<RelationshipGoal[]>(profile.user.relationshipGoals);
   return (
     <StepLayout
       title="What are you looking for?"
-      subtitle="Honest answers lead to better matches."
+      subtitle="Pick all that apply. Honest answers lead to better matches."
       progress={step.progress}
       onBack={step.onBack}
-      primaryDisabled={!goal}
-      onPrimary={() => goal && step.onContinue({ relationshipGoal: goal })}
+      primaryDisabled={goals.length === 0}
+      onPrimary={() => goals.length > 0 && step.onContinue({ relationshipGoals: goals })}
       onSkip={step.onSkip}
     >
-      <View style={{ gap: 12 }} accessibilityRole="radiogroup">
+      <View style={{ gap: 12 }}>
         {(Object.keys(RELATIONSHIP_GOAL_LABELS) as RelationshipGoal[]).map((g) => (
           <OptionCard
             key={g}
             title={RELATIONSHIP_GOAL_LABELS[g]}
-            selected={goal === g}
-            onPress={() => setGoal(g)}
+            role="checkbox"
+            selected={goals.includes(g)}
+            onPress={() =>
+              setGoals((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]))
+            }
           />
         ))}
       </View>
