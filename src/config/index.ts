@@ -12,6 +12,10 @@ export const config = {
   appName: 'Fetching',
   /** When true the app runs entirely on in-memory mock services. */
   useMocks: env.EXPO_PUBLIC_USE_MOCKS !== 'false',
+  /** Real backend. The key is the publishable one, safe to ship in the app. */
+  supabaseUrl: env.EXPO_PUBLIC_SUPABASE_URL ?? '',
+  supabaseKey: env.EXPO_PUBLIC_SUPABASE_KEY ?? '',
+  minPasswordLength: 8,
   /** Simulated network latency range for mock services, in ms. */
   mockLatencyMs: (env.EXPO_PUBLIC_MOCK_LATENCY === '0' ? [0, 0] : [200, 500]) as [number, number],
   mockCenter: {

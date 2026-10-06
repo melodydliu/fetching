@@ -470,7 +470,7 @@ describe('typing', () => {
 
 describe('sign up', () => {
   it('creates a bare, incomplete account and signs in as it', async () => {
-    const session = await s.auth.signUp({ email: 'new@example.com' });
+    const session = await s.auth.signUp({ email: 'new@example.com', password: 'password123' });
     expect(session.userId).not.toBe(SEED_VIEWER_ID);
     const user = (await s.users.getById(session.userId))!;
     expect(user.onboardingComplete).toBe(false);
@@ -479,7 +479,7 @@ describe('sign up', () => {
   });
 
   it('keeps new users out of Discover until onboarding completes', async () => {
-    const { userId } = await s.auth.signUp({ phone: '+15555550100' });
+    const { userId } = await s.auth.signUp({ email: 'fresh@example.com', password: 'password123' });
     await s.dev!.switchUser(SEED_VIEWER_ID);
     const ids = (await s.discovery.getCandidates(SEED_VIEWER_ID)).map((c) => c.user.id);
     expect(ids).not.toContain(userId);
@@ -488,7 +488,7 @@ describe('sign up', () => {
 
 describe('accounts and self-exclusion', () => {
   it('never shows anyone their own profile in Discover (every user, including new sign-ups)', async () => {
-    const { userId } = await s.auth.signUp({ email: 'me@example.com' });
+    const { userId } = await s.auth.signUp({ email: 'me@example.com', password: 'password123' });
     await s.users.update(userId, { onboardingComplete: true, firstName: 'Me' });
     for (const id of db.users.keys()) {
       const ids = (await s.discovery.getCandidates(id)).map((c) => c.user.id);
@@ -497,34 +497,36 @@ describe('accounts and self-exclusion', () => {
   });
 
   it('logging back in returns YOUR account, not the demo user', async () => {
-    const created = await s.auth.signUp({ email: 'Me@Example.com' });
+    const created = await s.auth.signUp({ email: 'Me@Example.com', password: 'password123' });
     await s.auth.signOut();
-    const session = await s.auth.signIn({ email: ' me@example.com ' });
+    const session = await s.auth.signIn({ email: ' me@example.com ', password: 'password123' });
     expect(session.userId).toBe(created.userId);
     expect(session.userId).not.toBe(SEED_VIEWER_ID);
   });
 
-  it('matches phone numbers regardless of formatting', async () => {
-    const created = await s.auth.signUp({ phone: '(415) 555-0123' });
-    await s.auth.signOut();
-    expect((await s.auth.signIn({ phone: '+1 415 555 0123' })).userId).toBe(created.userId);
-  });
-
   it('rejects unknown logins and duplicate sign-ups', async () => {
     await s.auth.signOut();
-    await expect(s.auth.signIn({ email: 'nobody@example.com' })).rejects.toThrow(/no account/i);
-    await expect(s.auth.signUp({ email: 'melody@example.com' })).rejects.toThrow(/already/i);
+    await expect(
+      s.auth.signIn({ email: 'nobody@example.com', password: 'password123' }),
+    ).rejects.toThrow(/no account/i);
+    await expect(
+      s.auth.signUp({ email: 'melody@example.com', password: 'password123' }),
+    ).rejects.toThrow(/already/i);
   });
 
   it('the demo account logs in as the seeded viewer', async () => {
     await s.auth.signOut();
-    expect((await s.auth.signIn({ email: 'melody@example.com' })).userId).toBe(SEED_VIEWER_ID);
+    expect(
+      (await s.auth.signIn({ email: 'melody@example.com', password: 'password123' })).userId,
+    ).toBe(SEED_VIEWER_ID);
   });
 
   it('deleting an account frees its login', async () => {
-    await s.auth.signUp({ email: 'gone@example.com' });
+    await s.auth.signUp({ email: 'gone@example.com', password: 'password123' });
     await s.auth.deleteAccount();
-    await expect(s.auth.signIn({ email: 'gone@example.com' })).rejects.toThrow(/no account/i);
+    await expect(
+      s.auth.signIn({ email: 'gone@example.com', password: 'password123' }),
+    ).rejects.toThrow(/no account/i);
   });
 });
 

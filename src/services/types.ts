@@ -27,11 +27,15 @@ export interface Session {
   userId: ID;
 }
 
-export type SignInCredentials = { phone: string } | { email: string };
+/** Email + password for now. Phone and emailed codes come later (need SMS / custom SMTP). */
+export interface SignInCredentials {
+  email: string;
+  password: string;
+}
 
 export interface AccountInfo {
   method: 'phone' | 'email';
-  /** The phone number or email they signed up with. */
+  /** The email (or phone number) they signed up with. */
   identifier: string;
   createdAt: string;
 }

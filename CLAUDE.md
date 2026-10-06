@@ -82,6 +82,8 @@ All in `src/domain/matching/` (pure, no UI or services). Every weight lives in `
 - Component tests: `src/test/render.tsx` (`renderWithApp`, mock services, fresh query cache); Reanimated/worklets are mocked in `jest.setup.ts`. RNTL v14 is async: `await render/fireEvent`.
 
 ## Supabase (in progress)
+- Sign-in is **email + password** (`SignInCredentials`), in mock and real mode. The mock accepts any password. Real auth lives in `src/services/supabase/auth.ts`; the client is `getSupabase()` (one instance, AsyncStorage session). "Confirm email" is OFF in the dashboard for development only: turn it on with custom SMTP before launch. `@supabase/supabase-js` is pinned to an exact version on purpose.
+- `createSupabaseServices()` only has auth so far; other services throw "not built yet", so keep `EXPO_PUBLIC_USE_MOCKS=true` until they exist.
 - `supabase/migrations/` is the source of truth for the database (create new ones with `supabase migration new <name>`; never edit one after it has been pushed). Run `supabase/tests/run.sh` after changing policies or triggers: it applies them to a throwaway local Postgres and checks the rules as different users.
 - Keys: `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_KEY` (publishable) live in `.env.local` (git-ignored). The service-role/secret key must never go in the app or in git; only local scripts may use it.
 - Rules that must not be client-trusted live in the database: daily like/Treat limits, match-on-mutual-like, block removes the match, Play Date edit/answer permissions. Error strings `like_quota_exceeded`, `treat_quota_exceeded`, `blocked`, `like_gone` map to the app's errors.

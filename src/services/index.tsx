@@ -4,12 +4,15 @@ import { createMockServices } from './mock';
 import type { Services } from './types';
 
 /**
- * The single switch between implementations. Add `createSupabaseServices()` here
- * and flip `EXPO_PUBLIC_USE_MOCKS=false`; no screen code changes.
+ * The single switch between implementations: `EXPO_PUBLIC_USE_MOCKS=false` selects Supabase.
+ * No screen code changes between the two.
  */
 export function createServices(): Services {
   if (config.useMocks) return createMockServices();
-  throw new Error('Real services are not implemented yet. Set EXPO_PUBLIC_USE_MOCKS=true.');
+  // Loaded only when needed, so mock mode and tests never touch the native storage module.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { createSupabaseServices } = require('./supabase') as typeof import('./supabase');
+  return createSupabaseServices();
 }
 
 const ServicesContext = createContext<Services | null>(null);
