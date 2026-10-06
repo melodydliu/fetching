@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 /**
  * Our own illustrations (transparent PNGs in assets/illustrations/). Screens ask for one by
  * name; each name is the screen it belongs to, so art can be redrawn or shared between screens
- * by changing one line here. Width and height are the file's pixel size (keeps its aspect ratio).
+ * by changing one line here. Width and height are the file's pixel size.
  */
 const ILLUSTRATIONS = {
   'empty-blocked': {
@@ -65,20 +65,29 @@ const ILLUSTRATIONS = {
 
 export type IllustrationName = keyof typeof ILLUSTRATIONS;
 
+/** Same visual size for every picture: about 240 x 190 points of artwork, whatever its shape. */
+const DEFAULT_AREA = 240 * 190;
+const MAX_WIDTH = 300;
+
 interface Props {
   name: IllustrationName;
-  /** Rendered width in points; height follows the picture's aspect ratio. */
-  width?: number;
+  /**
+   * How much room the picture takes up, in square points. Sizing by area (not width) keeps tall
+   * and wide pictures looking equally big. Use the default unless a screen needs a hero.
+   */
+  area?: number;
 }
 
-export function Illustration({ name, width = 240 }: Props) {
+export function Illustration({ name, area = DEFAULT_AREA }: Props) {
   const { source, width: w, height: h } = ILLUSTRATIONS[name];
+  const ratio = w / h;
+  const width = Math.min(MAX_WIDTH, Math.sqrt(area * ratio));
   return (
     <Image
       source={source}
       contentFit="contain"
       accessible={false}
-      style={{ width, aspectRatio: w / h }}
+      style={{ width, aspectRatio: ratio }}
     />
   );
 }

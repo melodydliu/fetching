@@ -430,7 +430,7 @@ export default function ChatScreen() {
             }
             ListEmptyComponent={
               <View style={[styles.empty, { gap: spacing.sm }]}>
-                <Illustration name="empty-chat-thread" width={220} />
+                <Illustration name="empty-chat-thread" area={200 * 160} />
                 <Text variant="heading" align="center">
                   You matched with {name}!
                 </Text>

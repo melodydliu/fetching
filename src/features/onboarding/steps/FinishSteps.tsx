@@ -145,7 +145,7 @@ export function DoneStep({ profile, ...step }: StepProps) {
       onPrimary={() => step.onContinue()}
     >
       <View style={{ alignItems: 'center', gap: 16 }}>
-        <Illustration name="onboarding-finish" width={240} />
+        <Illustration name="onboarding-finish" />
         <Text variant="body" color="textMuted" align="center">
           Your profile stays hidden from Discover until you tap below.
         </Text>

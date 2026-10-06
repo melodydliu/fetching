@@ -148,7 +148,7 @@ export function LocationStep({ profile, ...step }: StepProps) {
       onSkip={step.onSkip}
     >
       <View style={{ alignItems: 'center', gap: spacing.lg }}>
-        <Illustration name="onboarding-location" width={260} />
+        <Illustration name="onboarding-location" />
         {state === 'denied' && (
           <Text variant="small" color="textMuted" align="center" accessibilityLiveRegion="polite">
             No problem. You can turn location on later in Settings. For now we&apos;ll use{' '}

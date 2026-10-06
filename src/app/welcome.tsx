@@ -11,7 +11,7 @@ export default function WelcomeScreen() {
   return (
     <Screen>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md }}>
-        <Illustration name="welcome" width={280} />
+        <Illustration name="welcome" area={280 * 230} />
         <Text variant="display" align="center">
           Your next best{' '}
           <Text variant="displayItalic" color="primary">
