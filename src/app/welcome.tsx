@@ -12,12 +12,14 @@ export default function WelcomeScreen() {
     <Screen>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md }}>
         <Illustration name="welcome" width={280} />
-        <Text variant="display" align="center">
-          Your next best adventure
-        </Text>
-        <Text variant="displayItalic" color="primary" align="center">
-          begins
-        </Text>
+        <View>
+          <Text variant="display" align="center">
+            Your next best adventure
+          </Text>
+          <Text variant="displayItalic" color="primary" align="center" style={{ marginTop: -8 }}>
+            awaits
+          </Text>
+        </View>
         <Text variant="body" color="textMuted" align="center">
           The dating app for pet lovers to find the perfect match
         </Text>
