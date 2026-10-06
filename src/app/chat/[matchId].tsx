@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DatePlanCard } from '@/components/chat/DatePlanCard';
 import { DateTimePicker } from '@/components/chat/DateTimePicker';
+import { chatListLayout } from '@/components/chat/listLayout';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { SafetySheet } from '@/components/safety/SafetySheet';
@@ -318,6 +319,7 @@ export default function ChatScreen() {
 
   // Newest first for the inverted list.
   const data = useMemo(() => buildChatItems(messages.data ?? []).reverse(), [messages.data]);
+  const listLayout = chatListLayout(data.length, spacing.lg, spacing.sm);
   const name = other.data?.user.firstName ?? '';
   const participantIds = match.data?.userIds ?? [];
 
@@ -415,13 +417,16 @@ export default function ChatScreen() {
             data={data}
             keyExtractor={(item: ChatItem) => item.key}
             style={styles.flex}
-            contentContainerStyle={[
-              { padding: spacing.lg, gap: spacing.sm },
-              data.length === 0 && { flexGrow: 1, justifyContent: 'center' },
-            ]}
+            contentContainerStyle={listLayout.contentContainerStyle}
             keyboardShouldPersistTaps="handled"
-            // Inverted list: the header renders at the bottom, below the newest message.
-            ListHeaderComponent={otherTyping ? <TypingIndicator name={name} /> : null}
+            // Inverted list: the header renders below the newest message. It grows to fill spare
+            // room, which top-aligns a short thread; the typing dots sit right under the message.
+            ListHeaderComponentStyle={listLayout.headerStyle}
+            ListHeaderComponent={
+              <View style={styles.flex}>
+                {otherTyping ? <TypingIndicator name={name} /> : null}
+              </View>
+            }
             ListEmptyComponent={
               <View style={[styles.empty, { gap: spacing.sm }]}>
                 <Text variant="heading" align="center">
