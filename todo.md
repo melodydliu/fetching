@@ -91,7 +91,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 ---
 
 ## Gaps and loose ends from earlier phases
-- [ ] **Next design task:** rework how pets are viewed on a profile (the tinted "Meet [pet]" panel is a stopgap)
+- [x] Pet viewing on a profile: decided to keep the tinted "Meet [pet]" panel (the pet-bubble sheet matches it)
 - [x] Pet bubbles in the hero open that pet's card in a sheet
 - [x] Captions for pet photos (editable in the pet form, shown over the carousel photo)
 - [ ] The hero Like targets the hero photo; consider a true "whole profile" like type (touches Likes You rendering)
@@ -132,7 +132,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 ```bash
 npm install
 npm start            # scan the QR with Expo Go (use `npx expo start --tunnel` if your Wi-Fi blocks it)
-npm test             # 275 tests
+npm test             # 278 tests
 npm run typecheck && npm run lint
 ```
 Architecture and conventions live in `CLAUDE.md`.
