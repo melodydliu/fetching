@@ -61,9 +61,21 @@ export default function ProfileScreen() {
                     />
                   )}
                 </View>
-                <Text variant="title">
-                  {user.firstName}, {ageFromBirthdate(user.birthdate)}
-                </Text>
+                <View style={[styles.nameRow, { gap: spacing.sm }]}>
+                  <Text variant="title" style={styles.name}>
+                    {user.firstName}, {ageFromBirthdate(user.birthdate)}
+                  </Text>
+                  <Pressable
+                    onPress={() => router.push('/preview')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Preview your profile"
+                    accessibilityHint="See your profile as other people see it"
+                    hitSlop={4}
+                    style={[styles.previewButton, { backgroundColor: colors.surfaceMuted }]}
+                  >
+                    <Icon name="eye" size={22} color={colors.primary} />
+                  </Pressable>
+                </View>
                 <View style={[styles.chips, { gap: spacing.sm }]}>
                   {user.kind === 'animal_lover' ? (
                     <Chip label="Animal Lover" tone="sage" />
@@ -125,12 +137,6 @@ export default function ProfileScreen() {
                   onPress={() => router.push('/preferences')}
                 />
                 <ListRow
-                  title="Preview"
-                  subtitle="See your profile as others do"
-                  leading={<Icon name="eye" color={colors.primary} />}
-                  onPress={() => router.push('/preview')}
-                />
-                <ListRow
                   title="Settings"
                   subtitle="Account, notifications, privacy"
                   leading={<Icon name="sliders" color={colors.primary} />}
@@ -147,6 +153,16 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   hero: { alignItems: 'center' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  name: { flexShrink: 1, textAlign: 'center' },
+  // 40pt circle + hitSlop = a 48pt tap target.
+  previewButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   todoRow: { flexDirection: 'row', alignItems: 'center', minHeight: 48, gap: 8 },
   todoText: { flex: 1 },
   avatar: { width: 128, height: 128, borderRadius: 64, borderWidth: 4, overflow: 'hidden' },

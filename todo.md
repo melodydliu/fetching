@@ -1,7 +1,7 @@
 # Fetching: status and to-do
 
 A dating app for people whose pets are family. Expo SDK 57 + React Native + TypeScript, running entirely on mock services.
-Last updated after Phase 4, the phone check and the pet-sheet restyle. 315 unit tests passing across 28 suites (+18 live Supabase tests, skipped unless asked); typecheck and lint clean.
+Last updated after Phase 4, the phone check and the pet-sheet restyle. 323 unit tests passing across 31 suites (+18 live Supabase tests, skipped unless asked); typecheck and lint clean.
 
 ## What's left (start here)
 All four build phases are code-complete, and you've checked the app on a phone in Expo Go ("everything looks good so far"). Decisions made: keep the Preferences model as is (an empty section = no preference; the Dealbreaker switch makes a section strict; pet filters already apply to animal lovers), keep the tinted "Meet [pet]" panel, and the pet-bubble sheet now matches that panel exactly.
@@ -133,7 +133,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 ```bash
 npm install
 npm start            # scan the QR with Expo Go (use `npx expo start --tunnel` if your Wi-Fi blocks it)
-npm test             # 315 tests
+npm test             # 323 tests
 npm run typecheck && npm run lint
 ```
 Architecture and conventions live in `CLAUDE.md`.

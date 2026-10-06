@@ -33,6 +33,11 @@ interface ProfileViewProps {
   onMorePress?: () => void;
   /** Sits on top of the hero photo, e.g. the daily-likes chips. */
   heroOverlay?: ReactNode;
+  /**
+   * Darkens the very top of the hero so the status bar stays readable. Right when the photo runs
+   * to the top of the screen (the default); turn it off when the hero sits below a header.
+   */
+  statusBarScrim?: boolean;
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -49,6 +54,7 @@ export function ProfileView({
   onLikePress,
   onMorePress,
   heroOverlay,
+  statusBarScrim = true,
 }: ProfileViewProps) {
   const { colors, radii, spacing } = useTheme();
   const insets = useSafeAreaInsets();
@@ -199,10 +205,13 @@ export function ProfileView({
         {heroCaption ? <Caption text={heroCaption} style={styles.heroCaption} /> : null}
         {heroPets.length > 0 ? <PetBubbles pets={heroPets} onPress={setOpenPet} /> : null}
         {/* Keeps the status bar readable on bright photos. */}
-        <View
-          style={[styles.scrim, { height: insets.top + 24, backgroundColor: colors.overlay }]}
-          pointerEvents="none"
-        />
+        {statusBarScrim ? (
+          <View
+            testID="status-bar-scrim"
+            style={[styles.scrim, { height: insets.top + 24, backgroundColor: colors.overlay }]}
+            pointerEvents="none"
+          />
+        ) : null}
         {onMorePress ? (
           <Pressable
             onPress={onMorePress}

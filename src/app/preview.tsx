@@ -24,11 +24,12 @@ export default function PreviewScreen() {
     >
       <View style={[gutter, { paddingTop: insets.top + spacing.md, gap: spacing.lg }]}>
         <ScreenHeader title="Preview" back />
-        <Chip label="This is how others see you" tone="accent" />
+        <Chip label="This is how your profile looks to other users" tone="accent" />
       </View>
       {profile.data ? (
         <View style={{ marginTop: spacing.lg }}>
-          <ProfileView profile={profile.data} />
+          {/* The photo sits below the header here, so there's no status bar to shade. */}
+          <ProfileView profile={profile.data} statusBarScrim={false} />
         </View>
       ) : profile.isError ? (
         <View style={gutter}>
