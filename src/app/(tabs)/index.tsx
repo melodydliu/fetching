@@ -247,7 +247,7 @@ export default function DiscoverScreen() {
               likedYou={current.likedYou}
               onLikePress={openLike}
               onMorePress={() => setSafetyOpen(true)}
-              heroOverlay={
+              topBar={
                 q ? (
                   <>
                     <View style={[styles.chips, { gap: spacing.sm }]}>

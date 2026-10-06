@@ -21,7 +21,7 @@ import { Icon, type IconName } from './ui/Icon';
 import { PhotoView } from './ui/PhotoView';
 import { Text } from './ui/Text';
 
-const HERO_ASPECT = 0.9;
+const HERO_ASPECT = 0.8;
 
 interface ProfileViewProps {
   profile: Profile;
@@ -33,6 +33,11 @@ interface ProfileViewProps {
   onMorePress?: () => void;
   /** Sits on top of the hero photo, e.g. the daily-likes chips. */
   heroOverlay?: ReactNode;
+  /**
+   * A strip above the hero, on the page background, e.g. Discover's daily-likes chips. It takes
+   * over the status-bar inset, so the photo starts below it with no scrim and nothing on top.
+   */
+  topBar?: ReactNode;
   /**
    * Darkens the very top of the hero so the status bar stays readable. Right when the photo runs
    * to the top of the screen (the default); turn it off when the hero sits below a header.
@@ -54,6 +59,7 @@ export function ProfileView({
   onLikePress,
   onMorePress,
   heroOverlay,
+  topBar,
   statusBarScrim = true,
 }: ProfileViewProps) {
   const { colors, radii, spacing } = useTheme();
@@ -188,8 +194,23 @@ export function ProfileView({
     );
   };
 
+  // With a top bar the photo no longer reaches the status bar, so nothing needs the inset.
+  const heroInset = topBar ? 0 : insets.top;
+
   return (
     <View>
+      {topBar ? (
+        <View
+          style={{
+            paddingTop: insets.top + spacing.sm,
+            paddingBottom: spacing.sm,
+            paddingHorizontal: spacing.lg,
+            gap: spacing.sm,
+          }}
+        >
+          {topBar}
+        </View>
+      ) : null}
       <View style={{ aspectRatio: HERO_ASPECT, backgroundColor: colors.surfaceMuted }}>
         {heroUrl ? (
           <PhotoView
@@ -205,7 +226,7 @@ export function ProfileView({
         {heroCaption ? <Caption text={heroCaption} style={styles.heroCaption} /> : null}
         {heroPets.length > 0 ? <PetBubbles pets={heroPets} onPress={setOpenPet} /> : null}
         {/* Keeps the status bar readable on bright photos. */}
-        {statusBarScrim ? (
+        {statusBarScrim && !topBar ? (
           <View
             testID="status-bar-scrim"
             style={[styles.scrim, { height: insets.top + 24, backgroundColor: colors.overlay }]}
@@ -220,7 +241,7 @@ export function ProfileView({
             style={[
               styles.moreButton,
               {
-                top: insets.top + spacing.sm,
+                top: heroInset + spacing.sm,
                 right: spacing.md,
                 backgroundColor: colors.surface,
                 borderRadius: radii.pill,
@@ -234,7 +255,7 @@ export function ProfileView({
           <View
             style={[
               styles.heroOverlay,
-              { top: insets.top + spacing.sm, paddingHorizontal: spacing.lg, gap: spacing.sm },
+              { top: heroInset + spacing.sm, paddingHorizontal: spacing.lg, gap: spacing.sm },
             ]}
           >
             {heroOverlay}
