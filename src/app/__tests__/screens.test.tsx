@@ -58,11 +58,13 @@ describe('Matches', () => {
 describe('Preferences', () => {
   it('Save stays disabled until something changes, then saves the new preferences', async () => {
     const { db } = await renderWithApp(<PreferencesScreen />);
-    await waitFor(() => expect(screen.getByLabelText('Increase Youngest')).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText('Youngest age')).toBeTruthy());
     expect(screen.getByLabelText('Save changes').props.accessibilityState.disabled).toBe(true);
 
     const before = db.users.get(SEED_VIEWER_ID)!.preferences.ageRange.min;
-    await fireEvent.press(screen.getByLabelText('Increase Youngest'));
+    await fireEvent(screen.getByLabelText('Youngest age'), 'accessibilityAction', {
+      nativeEvent: { actionName: 'increment' },
+    });
     await fireEvent.press(screen.getByLabelText('Save changes'));
 
     await waitFor(() =>

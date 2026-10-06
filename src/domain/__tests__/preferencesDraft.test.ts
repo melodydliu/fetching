@@ -5,21 +5,9 @@ import {
   isDirty,
   normalizeDraft,
   resetDraft,
-  stepAge,
 } from '../preferencesDraft';
 
 const user = () => buildSeed(new Date()).users.find((u) => u.id === SEED_VIEWER_ID)!;
-
-describe('stepAge', () => {
-  it('moves one end, never crossing the other or leaving 18-99', () => {
-    expect(stepAge({ min: 25, max: 35 }, 'min', 1)).toEqual({ min: 26, max: 35 });
-    expect(stepAge({ min: 35, max: 35 }, 'min', 1)).toEqual({ min: 35, max: 35 });
-    expect(stepAge({ min: 18, max: 30 }, 'min', -1)).toEqual({ min: 18, max: 30 });
-    expect(stepAge({ min: 25, max: 25 }, 'max', -1)).toEqual({ min: 25, max: 25 });
-    expect(stepAge({ min: 25, max: 99 }, 'max', 1)).toEqual({ min: 25, max: 99 });
-    expect(stepAge({ min: 25, max: 30 }, 'max', 5)).toEqual({ min: 25, max: 35 });
-  });
-});
 
 describe('hasSelection / normalizeDraft', () => {
   it('a dealbreaker with nothing selected is switched off', () => {

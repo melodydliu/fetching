@@ -11,7 +11,7 @@ import { InfoTip } from '@/components/ui/InfoTip';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Stepper } from '@/components/ui/Stepper';
+import { RangeSlider } from '@/components/ui/RangeSlider';
 import { Text } from '@/components/ui/Text';
 import { config } from '@/config';
 import {
@@ -30,7 +30,6 @@ import {
   isDirty,
   type PreferencesDraft,
   resetDraft,
-  stepAge,
   toUserPatch,
 } from '@/domain/preferencesDraft';
 import type { Preferences, RelationshipGoal, User } from '@/domain/types';
@@ -179,20 +178,17 @@ function PreferencesForm({ user }: { user: User }) {
         />
 
         <Section title="Age">
-          <View style={{ gap: spacing.sm }}>
-            <Stepper
-              label="Youngest"
-              value={prefs.ageRange.min}
-              canDecrement={prefs.ageRange.min > config.minAge}
-              canIncrement={prefs.ageRange.min < prefs.ageRange.max}
-              onChange={(d) => setPrefs({ ageRange: stepAge(prefs.ageRange, 'min', d) })}
-            />
-            <Stepper
-              label="Oldest"
-              value={prefs.ageRange.max}
-              canDecrement={prefs.ageRange.max > prefs.ageRange.min}
-              canIncrement={prefs.ageRange.max < config.maxAge}
-              onChange={(d) => setPrefs({ ageRange: stepAge(prefs.ageRange, 'max', d) })}
+          <View style={{ gap: spacing.xs }}>
+            <Text variant="heading" align="center">
+              {prefs.ageRange.min} – {prefs.ageRange.max}
+            </Text>
+            <RangeSlider
+              minLabel="Youngest age"
+              maxLabel="Oldest age"
+              lo={config.minAge}
+              hi={config.maxAge}
+              value={prefs.ageRange}
+              onChange={(ageRange) => setPrefs({ ageRange })}
             />
           </View>
         </Section>
