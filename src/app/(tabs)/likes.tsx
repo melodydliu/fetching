@@ -55,7 +55,7 @@ export default function LikesYouScreen() {
             illustration="empty-likes-you"
             title="No likes yet. They're on their way."
             body="When someone likes a photo, prompt or pet of yours, they'll show up here."
-            actionLabel="Keep browsing"
+            actionLabel="Find your match"
             onAction={() => router.navigate('/')}
           />
         </View>

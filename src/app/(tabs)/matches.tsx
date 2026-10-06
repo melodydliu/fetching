@@ -37,7 +37,7 @@ export default function MatchesScreen() {
             illustration="empty-matches"
             title="Your first match is out there"
             body="Like a photo, a prompt, or a pet that makes you smile. When it's mutual, you'll chat here."
-            actionLabel="Go to Discover"
+            actionLabel="Find your match"
             onAction={() => router.navigate('/')}
           />
         </View>
