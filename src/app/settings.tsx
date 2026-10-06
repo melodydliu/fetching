@@ -1,17 +1,19 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { ListRow } from '@/components/ui/ListRow';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/Text';
 import { config } from '@/config';
+import type { NotificationSettings } from '@/domain/types';
+import { useProfileActions } from '@/hooks/profileActions';
 import { queryKeys, useViewerProfile } from '@/hooks/queries';
 import { useTheme } from '@/hooks/useTheme';
 import { useServices } from '@/services';
+import { confirmAction } from '@/utils/confirm';
 
 function SectionTitle({ children }: { children: string }) {
   const { spacing } = useTheme();
@@ -31,11 +33,7 @@ export default function SettingsScreen() {
   const { auth, users } = useServices();
   const queryClient = useQueryClient();
   const profile = useViewerProfile();
-  const [notifications, setNotifications] = useState({
-    matches: true,
-    messages: true,
-    likes: true,
-  });
+  const { updateUser } = useProfileActions();
 
   const iconFor = (name: IconName) => <Icon name={name} color={colors.primary} />;
 
@@ -57,24 +55,26 @@ export default function SettingsScreen() {
   });
 
   const confirmDelete = () =>
-    Alert.alert(
-      'Delete your account?',
-      'This permanently removes your profile, matches and messages. This can’t be undone.',
-      [
-        { text: 'Keep my account', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deleteAccount.mutate() },
-      ],
-    );
+    confirmAction({
+      title: 'Delete your account?',
+      message: 'This permanently removes your profile, matches and messages. This can’t be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep my account',
+      destructive: true,
+      onConfirm: () => deleteAccount.mutate(),
+    });
 
-  const toggle = (key: keyof typeof notifications, label: string) => (
+  const notifications = profile.data?.user.notifications;
+  const toggle = (key: keyof NotificationSettings, label: string) => (
     <ListRow
       key={key}
       title={label}
       chevron={false}
       trailing={
         <Switch
-          value={notifications[key]}
-          onValueChange={(v) => setNotifications((n) => ({ ...n, [key]: v }))}
+          value={notifications?.[key] ?? true}
+          disabled={!notifications}
+          onValueChange={(v) => void updateUser({ notifications: { ...notifications!, [key]: v } })}
           trackColor={{ true: colors.primary, false: colors.border }}
           accessibilityLabel={label}
         />
@@ -89,10 +89,10 @@ export default function SettingsScreen() {
       <SectionTitle>Account</SectionTitle>
       <View style={{ gap: spacing.sm }}>
         <ListRow
-          title="Phone & email"
-          subtitle="Mock sign-in"
+          title="Account"
+          subtitle="Sign-in, member since"
+          onPress={() => router.push('/account')}
           leading={iconFor('lock')}
-          onPress={() => undefined}
         />
       </View>
 
@@ -101,9 +101,18 @@ export default function SettingsScreen() {
         {toggle('matches', 'New matches')}
         {toggle('messages', 'Messages')}
         {toggle('likes', 'Likes')}
+        {toggle('playDates', 'Play Dates')}
       </View>
 
       <SectionTitle>Privacy</SectionTitle>
+      <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
+        <ListRow
+          title="Blocked people"
+          subtitle="See and undo who you've blocked"
+          leading={iconFor('shield')}
+          onPress={() => router.push('/blocked')}
+        />
+      </View>
       <ListRow
         title="Pause my account"
         subtitle="Hide me from Discover. Matches can still chat."

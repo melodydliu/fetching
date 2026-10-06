@@ -56,6 +56,16 @@ describe('discovery', () => {
     expect(after).not.toContain(b!.user.id);
   });
 
+  it('brings a skipped profile back after unpass', async () => {
+    const [first] = await s.discovery.getCandidates(SEED_VIEWER_ID);
+    await s.discovery.pass(SEED_VIEWER_ID, first!.user.id);
+    const ids = (await s.discovery.getCandidates(SEED_VIEWER_ID)).map((c) => c.user.id);
+    expect(ids).not.toContain(first!.user.id);
+    await s.discovery.unpass(SEED_VIEWER_ID, first!.user.id);
+    const after = (await s.discovery.getCandidates(SEED_VIEWER_ID)).map((c) => c.user.id);
+    expect(after).toContain(first!.user.id);
+  });
+
   it('includes pets, distance and a compatibility result with each candidate', async () => {
     const list = await s.discovery.getCandidates(SEED_VIEWER_ID);
     expect(list.length).toBeGreaterThanOrEqual(10);
@@ -299,6 +309,46 @@ describe('matches and chat', () => {
   });
 });
 
+describe('preferences', () => {
+  it('a "show animal lovers" dealbreaker and a tight distance change who Discover returns', async () => {
+    const before = await s.discovery.getCandidates(SEED_VIEWER_ID);
+    expect(before.some((c) => c.user.kind === 'pet_owner')).toBe(true);
+
+    const me = (await s.users.getById(SEED_VIEWER_ID))!;
+    await s.users.update(SEED_VIEWER_ID, {
+      preferences: { ...me.preferences, show: 'animal_lovers' },
+      dealbreakers: { ...me.dealbreakers, show: true },
+    });
+    const lovers = await s.discovery.getCandidates(SEED_VIEWER_ID);
+    expect(lovers.every((c) => c.user.kind === 'animal_lover')).toBe(true);
+
+    await s.users.update(SEED_VIEWER_ID, {
+      preferences: { ...me.preferences, maxDistanceMiles: 5 },
+      dealbreakers: me.dealbreakers,
+    });
+    const near = await s.discovery.getCandidates(SEED_VIEWER_ID);
+    expect(near.every((c) => c.distanceMiles <= 5)).toBe(true);
+    expect(near.length).toBeLessThan(before.length);
+  });
+});
+
+describe('seeded likes', () => {
+  it("each one targets something that exists on the viewer's own profile", async () => {
+    const mine = db.profileOf(SEED_VIEWER_ID);
+    const likes = await s.likes.listIncoming(SEED_VIEWER_ID);
+    expect(likes.length).toBeGreaterThan(0);
+    for (const like of likes) {
+      const ids =
+        like.target.type === 'photo'
+          ? mine.user.photos.map((p) => p.id)
+          : like.target.type === 'prompt'
+            ? mine.user.promptAnswers.map((a) => a.id)
+            : mine.pets.map((p) => p.id);
+      expect(ids).toContain(like.target.id);
+    }
+  });
+});
+
 describe('like back', () => {
   it('matches without spending a daily like and clears the like from Likes You', async () => {
     const [like] = await s.likes.listIncoming(SEED_VIEWER_ID);
@@ -316,6 +366,19 @@ describe('like back', () => {
     expect((await s.likes.likeBack(first!.id, SEED_VIEWER_ID)).id).toBe(a.id);
     await s.likes.remove(second!.id);
     await expect(s.likes.likeBack(second!.id, SEED_VIEWER_ID)).rejects.toThrow();
+  });
+});
+
+describe('blocking', () => {
+  it('removes the match and its messages, and unblock lists/clears the block', async () => {
+    const { match, otherUserId } = (await s.matches.list(SEED_VIEWER_ID)).find(
+      (m) => m.lastMessage,
+    )!;
+    await s.users.block(SEED_VIEWER_ID, otherUserId);
+    expect(await s.chat.listMessages(match.id)).toEqual([]);
+    expect(await s.users.listBlockedIds(SEED_VIEWER_ID)).toEqual([otherUserId]);
+    await s.users.unblock(SEED_VIEWER_ID, otherUserId);
+    expect(await s.users.listBlockedIds(SEED_VIEWER_ID)).toEqual([]);
   });
 });
 

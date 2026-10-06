@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { promptById } from '@/config/prompts';
 import { RELATIONSHIP_GOAL_LABELS, SPECIES_LABELS } from '@/config/reference';
@@ -14,7 +14,7 @@ import {
   type ProfileBlock,
   type ProfileSection,
 } from '@/domain/profileBlocks';
-import type { Pet, Photo, Profile, Tri } from '@/domain/types';
+import type { Pet, Photo, Profile, PromptAnswer, Tri } from '@/domain/types';
 import { useTheme } from '@/hooks/useTheme';
 import { Chip } from './ui/Chip';
 import { Icon, type IconName } from './ui/Icon';
@@ -29,6 +29,8 @@ interface ProfileViewProps {
   likedYou?: LikedYou | null;
   /** When set, every photo, prompt and pet gets a labelled "Like" button that calls this. */
   onLikePress?: (block: ProfileBlock) => void;
+  /** Shows a ⋯ button on the hero (unmatch / block / report). */
+  onMorePress?: () => void;
   /** Sits on top of the hero photo, e.g. the daily-likes chips. */
   heroOverlay?: ReactNode;
 }
@@ -45,12 +47,16 @@ export function ProfileView({
   distanceMiles,
   likedYou,
   onLikePress,
+  onMorePress,
   heroOverlay,
 }: ProfileViewProps) {
   const { colors, radii, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = profile;
+  const [openPet, setOpenPet] = useState<Pet | null>(null);
   const sections = buildProfileSections(profile);
+  // The pet-themed prompts they answered, shown with each pet in its sheet too.
+  const petPrompts = user.promptAnswers.filter((a) => promptById(a.promptId)?.category === 'pet');
   const heroBlock = heroBlockOf(sections);
   const heroUrl = heroBlock?.type === 'photo' ? heroBlock.photo.url : null;
   const heroCaption = heroBlock?.type === 'photo' ? heroBlock.photo.caption : undefined;
@@ -218,12 +224,30 @@ export function ProfileView({
           </View>
         )}
         {heroCaption ? <Caption text={heroCaption} style={styles.heroCaption} /> : null}
-        {heroPets.length > 0 ? <PetBubbles pets={heroPets} /> : null}
+        {heroPets.length > 0 ? <PetBubbles pets={heroPets} onPress={setOpenPet} /> : null}
         {/* Keeps the status bar readable on bright photos. */}
         <View
           style={[styles.scrim, { height: insets.top + 24, backgroundColor: colors.overlay }]}
           pointerEvents="none"
         />
+        {onMorePress ? (
+          <Pressable
+            onPress={onMorePress}
+            accessibilityRole="button"
+            accessibilityLabel={`More options for ${user.firstName}`}
+            style={[
+              styles.moreButton,
+              {
+                top: insets.top + spacing.sm,
+                right: spacing.md,
+                backgroundColor: colors.surface,
+                borderRadius: radii.pill,
+              },
+            ]}
+          >
+            <Icon name="more" size={24} color={colors.text} />
+          </Pressable>
+        ) : null}
         {heroOverlay ? (
           <View
             style={[
@@ -276,6 +300,7 @@ export function ProfileView({
 
         {sections.map(renderSection)}
       </View>
+      <PetSheet pet={openPet} prompts={petPrompts} onClose={() => setOpenPet(null)} />
     </View>
   );
 }
@@ -297,20 +322,19 @@ function Caption({ text, style }: { text: string; style: object }) {
 const BUBBLE = 72;
 const MAX_BUBBLES = 3;
 
-/** Round pet photos on the hero's bottom-right corner, overlapping like a stack. */
-function PetBubbles({ pets }: { pets: Pet[] }) {
+/** Round pet photos on the hero's bottom-right corner, overlapping like a stack. Tap one to meet that pet. */
+function PetBubbles({ pets, onPress }: { pets: Pet[]; onPress: (pet: Pet) => void }) {
   const { colors, spacing } = useTheme();
   const shown = pets.slice(0, MAX_BUBBLES);
-  const extra = pets.length - shown.length;
+  const hidden = pets.slice(MAX_BUBBLES);
   return (
-    <View
-      accessible
-      accessibilityLabel={`Pets: ${pets.map((p) => p.name).join(', ')}`}
-      style={[styles.bubbles, { right: spacing.lg }]}
-    >
+    <View style={[styles.bubbles, { right: spacing.lg }]}>
       {shown.map((pet, i) => (
-        <View
+        <Pressable
           key={pet.id}
+          onPress={() => onPress(pet)}
+          accessibilityRole="button"
+          accessibilityLabel={`Meet ${pet.name}`}
           style={[
             styles.bubble,
             {
@@ -327,10 +351,13 @@ function PetBubbles({ pets }: { pets: Pet[] }) {
               <Icon name="paw" size={30} color={colors.textSubtle} />
             </View>
           )}
-        </View>
+        </Pressable>
       ))}
-      {extra > 0 && (
-        <View
+      {hidden.length > 0 && (
+        <Pressable
+          onPress={() => onPress(hidden[0]!)}
+          accessibilityRole="button"
+          accessibilityLabel={`Meet ${hidden.map((p) => p.name).join(', ')}`}
           style={[
             styles.bubble,
             styles.center,
@@ -338,11 +365,90 @@ function PetBubbles({ pets }: { pets: Pet[] }) {
           ]}
         >
           <Text variant="smallStrong" color="onPrimarySoft">
-            +{extra}
+            +{hidden.length}
           </Text>
-        </View>
+        </Pressable>
       )}
     </View>
+  );
+}
+
+/** A pet's full card in a sheet, opened from the hero's pet bubbles. */
+function PetSheet({
+  pet,
+  prompts,
+  onClose,
+}: {
+  pet: Pet | null;
+  prompts: PromptAnswer[];
+  onClose: () => void;
+}) {
+  const { colors, radii, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  return (
+    <Modal visible={!!pet} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={[styles.sheetBackdrop, { backgroundColor: colors.overlay }]}>
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+        />
+        <View
+          style={{
+            maxHeight: windowHeight * 0.88,
+            backgroundColor: colors.background,
+            borderTopLeftRadius: radii.xl,
+            borderTopRightRadius: radii.xl,
+            paddingTop: spacing.md,
+          }}
+        >
+          <View style={styles.sheetHeader}>
+            <Pressable
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              style={styles.sheetClose}
+            >
+              <Icon name="x" size={24} color={colors.text} />
+            </Pressable>
+          </View>
+          <ScrollView
+            contentContainerStyle={{
+              paddingHorizontal: spacing.lg,
+              paddingBottom: insets.bottom + spacing.lg,
+            }}
+          >
+            {pet ? (
+              <View style={{ gap: spacing.md }}>
+                <PetCard pet={pet} likeButton={null} />
+                {prompts.map((answer) => (
+                  <View
+                    key={answer.id}
+                    style={[
+                      styles.card,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                        borderRadius: radii.xl,
+                        padding: spacing.xl,
+                        gap: spacing.sm,
+                      },
+                    ]}
+                  >
+                    <Text variant="smallStrong" color="textMuted">
+                      {promptById(answer.promptId)?.text}
+                    </Text>
+                    <Text variant="titleItalic">{answer.answer}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -392,12 +498,19 @@ function PhotoCarousel({ photos, name }: { photos: Photo[]; name: string }) {
           onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
         >
           {photos.map((p, i) => (
-            <PhotoView
-              key={p.id}
-              url={p.url}
-              label={`Photo ${i + 1} of ${name}`}
-              style={{ width, height: width }}
-            />
+            <View key={p.id} style={{ width, height: width }}>
+              <PhotoView
+                url={p.url}
+                label={`Photo ${i + 1} of ${name}`}
+                style={{ width, height: width }}
+              />
+              {p.caption ? (
+                <Caption
+                  text={p.caption}
+                  style={{ left: 12, right: 72, bottom: photos.length > 1 ? 32 : 12 }}
+                />
+              ) : null}
+            </View>
           ))}
         </ScrollView>
       )}
@@ -415,7 +528,7 @@ function PhotoCarousel({ photos, name }: { photos: Photo[]; name: string }) {
   );
 }
 
-function PetCard({ pet, likeButton }: { pet: Pet; likeButton: ReactNode }) {
+function PetCard({ pet, likeButton }: { pet: Pet; likeButton: ReactNode | null }) {
   const { colors, radii, spacing } = useTheme();
   const details = [
     pet.breed ?? SPECIES_LABELS[pet.species],
@@ -532,6 +645,17 @@ const styles = StyleSheet.create({
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0.5 },
   heroOverlay: { position: 'absolute', left: 0, right: 0, alignItems: 'flex-start' },
   sheet: { marginTop: -40 },
+  moreButton: {
+    position: 'absolute',
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  sheetBackdrop: { flex: 1, justifyContent: 'flex-end' },
+  sheetHeader: { alignItems: 'flex-end', paddingHorizontal: 12 },
+  sheetClose: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   caption: { position: 'absolute', paddingHorizontal: 12, paddingVertical: 8 },
   photoCaption: { left: 12, bottom: 12, right: 12 + 48 + 12 },
   heroCaption: { left: 16, bottom: 40 + 12, maxWidth: '50%' },

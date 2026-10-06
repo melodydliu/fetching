@@ -160,14 +160,15 @@ export function PetPhotosSection({ draft, onChange, onAddPress, adding }: Photos
         photos={draft.photos}
         max={6}
         noun="pet photo"
+        captions
         adding={adding}
         onAddPress={onAddPress}
         onChange={(photos) => onChange({ photos })}
       />
       <Text variant="small" color="textMuted">
         {draft.photos.length < 3
-          ? `${3 - draft.photos.length} more to go. Hold and drag to reorder.`
-          : 'Hold and drag to reorder. The first photo is the main one.'}
+          ? `${3 - draft.photos.length} more to go. Tap a photo to add a caption. Hold and drag to reorder.`
+          : 'Tap a photo to add a caption. Hold and drag to reorder. The first photo is the main one.'}
       </Text>
     </View>
   );

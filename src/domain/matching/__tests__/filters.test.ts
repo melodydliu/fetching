@@ -131,6 +131,22 @@ describe('dealbreakers', () => {
     });
   });
 
+  it('the gender preference is always a hard rule, no dealbreaker switch needed', () => {
+    // Interested in men and women, but only wants to see women.
+    const viewer = makeViewer({
+      interestedIn: ['man', 'woman'],
+      preferences: prefs({ genders: ['woman'] }),
+    });
+    const man = makeCandidate({ gender: 'man', interestedIn: ['woman'] });
+    const woman = makeCandidate({ gender: 'woman', interestedIn: ['woman'] });
+    expect(failureOf(run(viewer, man))).toMatchObject({
+      reason: 'dealbreaker',
+      by: 'viewer',
+      rules: ['genders'],
+    });
+    expect(run(viewer, woman).pass).toBe(true);
+  });
+
   it('applies dealbreakers set by the CANDIDATE too', () => {
     const picky = makeCandidate({
       preferences: prefs({ show: 'animal_lovers' }),
@@ -213,6 +229,13 @@ describe('dealbreakers', () => {
     expect(run(v, lover({ gender: 'man', interestedIn: ['woman'] })).pass).toBe(true);
   });
 
+  it('"my pet isn’t good with" works for every species, not just dogs and cats', () => {
+    const v = makeViewer({ dealbreakers: flags({ petNotGoodWith: ['rabbit', 'bird'] }) });
+    expect(run(v, makeCandidate({}, [{ species: 'rabbit' }])).pass).toBe(false);
+    expect(run(v, makeCandidate({}, [{ species: 'bird' }])).pass).toBe(false);
+    expect(run(v, makeCandidate({}, [{ species: 'dog' }])).pass).toBe(true);
+  });
+
   it('a skipped relationship goal is neutral, not a violation', () => {
     const v = makeViewer({
       preferences: prefs({ relationshipGoals: ['long_term'] }),
@@ -260,6 +283,15 @@ describe('dealbreakers', () => {
 
 describe('softPreferenceScore', () => {
   const prefs = (over: object) => ({ ...makeViewer().user.preferences, ...over });
+
+  it('ignores the gender preference, which is a hard rule', () => {
+    expect(
+      softPreferenceScore(
+        makeViewer({ preferences: prefs({ genders: ['woman'] }) }),
+        makeCandidate(),
+      ),
+    ).toBeNull();
+  });
 
   it('is null when no preference is set', () => {
     expect(softPreferenceScore(makeViewer(), makeCandidate())).toBeNull();

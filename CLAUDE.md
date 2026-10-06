@@ -61,13 +61,24 @@ All in `src/domain/matching/` (pure, no UI or services). Every weight lives in `
 - Likes: `LikeRepository.send` enforces daily limit + one Treat/day + no duplicate likes; Dev Menu -> Daily limits overrides quota for testing.
 - Profile layout (`ProfileView`): full-bleed hero photo (+ pet photo bubbles bottom-right), then name/age, a facts grid (pets summary, job, city, goal, distance), then photos/prompts/pets. Skip and Like are a floating pair in Discover (`app/(tabs)/index.tsx`); the Like opens the sheet for the hero photo. Each photo/prompt/pet still has its own icon-only heart. Render it edge to edge (no parent padding).
 - Profile content: `user.relationshipGoals` is multi-select (empty = unknown/neutral; any overlap counts in matching). Prompts: 1-10 (`config.minPromptAnswers`/`maxPromptAnswers`). Person photos can carry a caption (`PhotoGrid captions`, `CaptionModal`); pet photos don't yet.
-- Preferences UI doesn't exist until Phase 4, so everyone runs on defaults (age = yours -8/+10, 25 miles).
+- New accounts start on default preferences (age = yours -8/+10, 25 miles); the Preferences screen (Phase 4) edits them.
 
 ## Chat & Play Date (Phase 3)
 - Routes: `user/[id]` (any profile; `?likeId=` adds the Like back / Remove bar), `chat/[matchId]`, `play-date/[matchId]` (modal), `match-moment` (full-screen modal, `?matchId=`).
 - `likes.likeBack(likeId, viewerId)` matches without spending a daily like. Mutual likes sent from Discover also go to the match moment.
 - Chat uses TanStack Query for messages; `chat.subscribe` pushes new ones into the cache (dedupe by id). Opening a chat marks it read.
 - Date plan rules are pure (`domain/datePlans.ts`): `DatePlan.respondedById` records who last answered; a suggested change waits on the *other* person. Only the proposer can edit (future dates only; resets to `proposed`) or delete (`/play-date/[matchId]?planId=` is the edit mode of the planner). Day/time picking uses plain chips (`components/chat/DateTimePicker.tsx`), no native picker dependency.
+
+## Pets decide the profile type
+- No account-type switch: `user.kind` is derived from pets. `useProfileActions().createPet/removePet` call `kindPatchForPets` so adding a first pet makes someone a pet owner and removing the last makes them an animal lover (`domain/accountKind.ts`). Animal lovers can add pets from Edit profile at any time.
+
+## Preferences & safety (Phase 4)
+- Screens that edit data use a **draft + Save changes** bar (`components/SaveBar.tsx`) and `hooks/useDiscardGuard.ts` (asks before leaving with unsaved edits): Edit profile, Preferences, Pet editor. Pure draft rules live in `domain/profileDraft.ts` / `domain/preferencesDraft.ts`.
+- Age, distance and the **gender preference** are always hard filters, so they have no dealbreaker switch; a dealbreaker with nothing selected is switched off on save (`normalizeDraft`).
+- Safety: `SafetySheet` + `useSafetyActions` (reads the viewer id when the action fires). Blocking removes match + messages; `['candidates'|'likes'|'matches'|'messages'|'blocked']` queries are invalidated.
+- `Alert.alert` is a no-op on web: always use `utils/confirm.ts` (`confirmAction`).
+- Web quirk: the expo-router tab slot grows to fit content, so a screen with something pinned to the bottom (Discover's Skip/Like) caps its own height on web.
+- Component tests: `src/test/render.tsx` (`renderWithApp`, mock services, fresh query cache); Reanimated/worklets are mocked in `jest.setup.ts`. RNTL v14 is async: `await render/fireEvent`.
 
 ## Mock accounts
 Logins are remembered per account (`MockDb.accounts`). Log in with `config.demoAccountEmail` for the seeded demo user; an account you create via onboarding is only reachable with the phone/email you made it with. Unknown logins fail, like a real backend.
@@ -85,5 +96,5 @@ Illustrations are our own SVG spot art (`components/illustrations`), placeholder
 - Phase 1 (done): onboarding (both user types), profile view/edit/preview, pet profiles, photo management with drag-reorder.
 - Phase 2 (done): matching module + tests, Discover (full profile scroll, per-item likes with comments, Skip), daily like limit, Treat, (pet compatibility drives ranking but is not displayed).
 - Phase 3 (built, untested on device): Likes You -> profile -> Like back/Remove, match moment, matches list, chat, Play Date cards.
-- Phase 4: preferences, settings, safety (unmatch/block/report UI), polish.
+- Phase 4 (built, device check pending): Preferences + dealbreakers, unmatch/block/report, Account + persisted notification settings, error-state/accessibility audit.
 - Later (not now): Supabase, push, verification/moderation, suggested venues for Play Dates, monetization.

@@ -62,10 +62,10 @@ export function ListRow({
           </Text>
         ) : null}
       </View>
-      {trailing ??
-        (interactive && chevron ? (
-          <Icon name="chevron-right" size={20} color={colors.textSubtle} />
-        ) : null)}
+      {trailing}
+      {interactive && chevron ? (
+        <Icon name="chevron-right" size={20} color={colors.textSubtle} />
+      ) : null}
     </Pressable>
   );
 }

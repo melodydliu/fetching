@@ -1,9 +1,9 @@
-import { router, useNavigation } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { View } from 'react-native';
 import { BirthdateFields } from '@/components/BirthdateFields';
 import { PhotoGrid } from '@/components/PhotoGrid';
+import { SaveBar } from '@/components/SaveBar';
 import { PromptEditor } from '@/components/PromptEditor';
 import { Button } from '@/components/ui/Button';
 import { ChoiceChips } from '@/components/ui/ChoiceChips';
@@ -17,16 +17,24 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/ui/TextField';
 import { config } from '@/config';
-import { RELATIONSHIP_GOAL_LABELS, SPECIES, SPECIES_LABELS } from '@/config/reference';
+import {
+  GENDER_OPTIONS,
+  INTEREST_OPTIONS,
+  RELATIONSHIP_GOAL_LABELS,
+  SPECIES,
+  SPECIES_LABELS,
+} from '@/config/reference';
 import type { BirthdateResult } from '@/domain/onboarding';
 import {
   changedFields,
+  profileUpdateFor,
   draftFromUser,
   draftProblem,
   type ProfileDraft,
 } from '@/domain/profileDraft';
 import type { Profile, RelationshipGoal } from '@/domain/types';
 import { pickPhotoUris, useProfileActions } from '@/hooks/profileActions';
+import { useDiscardGuard } from '@/hooks/useDiscardGuard';
 import { useViewerProfile } from '@/hooks/queries';
 import { locateMe, lookUpPlace, type LocateResult } from '@/utils/location';
 import { useTheme } from '@/hooks/useTheme';
@@ -95,9 +103,6 @@ function EditForm({ profile }: { profile: Profile }) {
     age: 0,
   });
   const [saving, setSaving] = useState(false);
-  const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
-  const saved = useRef(false);
 
   const onBirth = useCallback((result: BirthdateResult) => {
     setBirth(result);
@@ -112,29 +117,13 @@ function EditForm({ profile }: { profile: Profile }) {
   const dirty = Object.keys(changes).length > 0;
   const problem = draftProblem(draft, birth.ok);
 
-  // Leaving with unsaved edits asks first (back button, swipe, or hardware back).
-  useEffect(
-    () =>
-      navigation.addListener('beforeRemove', (e) => {
-        if (saved.current || !dirty) return;
-        e.preventDefault();
-        Alert.alert('Discard changes?', 'Your edits haven’t been saved.', [
-          { text: 'Keep editing', style: 'cancel' },
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: () => navigation.dispatch(e.data.action),
-          },
-        ]);
-      }),
-    [navigation, dirty],
-  );
+  const { markSaved } = useDiscardGuard(dirty);
 
   const save = async () => {
     if (!dirty || problem) return;
     setSaving(true);
-    await updateUser(changes);
-    saved.current = true;
+    await updateUser(profileUpdateFor(user, changes));
+    markSaved();
     toast('Profile saved');
     router.back();
   };
@@ -213,6 +202,25 @@ function EditForm({ profile }: { profile: Profile }) {
             />
             <BirthdateFields initial={user.birthdate} onResult={onBirth} />
           </View>
+        </Section>
+
+        <Section title="Gender">
+          <ChoiceChips
+            label="I am"
+            options={GENDER_OPTIONS}
+            value={[draft.gender]}
+            onChange={([gender]) => gender && patch({ gender })}
+          />
+        </Section>
+
+        <Section title="Interested in">
+          <ChoiceChips
+            multiple
+            label="Interested in"
+            options={INTEREST_OPTIONS}
+            value={draft.interestedIn}
+            onChange={(interestedIn) => patch({ interestedIn })}
+          />
         </Section>
 
         <Section title="About you">
@@ -304,39 +312,46 @@ function EditForm({ profile }: { profile: Profile }) {
           />
         </Section>
 
-        {user.kind === 'pet_owner' ? (
-          <Section title="Your pets" hint="Each pet needs at least 3 photos.">
-            <View style={{ gap: spacing.sm }}>
-              {pets.map((pet) => (
-                <ListRow
-                  key={pet.id}
-                  title={pet.name}
-                  subtitle={`${pet.breed ?? SPECIES_LABELS[pet.species]} · ${pet.photos.length} photos`}
-                  leading={
-                    pet.photos[0] ? (
-                      <View style={{ width: 48, height: 48, borderRadius: 14, overflow: 'hidden' }}>
-                        <PhotoView
-                          url={pet.photos[0].url}
-                          label={`Photo of ${pet.name}`}
-                          style={{ width: 48, height: 48 }}
-                        />
-                      </View>
-                    ) : (
-                      <Icon name="paw" color={colors.primary} />
-                    )
-                  }
-                  onPress={() => router.push({ pathname: '/pet/[id]', params: { id: pet.id } })}
-                />
-              ))}
-              <Button
-                label="Add a pet"
-                icon="plus"
-                variant="secondary"
-                onPress={() => router.push({ pathname: '/pet/[id]', params: { id: 'new' } })}
+        <Section
+          title="Your pets"
+          hint={
+            pets.length > 0
+              ? 'Each pet needs at least 3 photos.'
+              : 'Have a pet? Add them and your profile will show them.'
+          }
+        >
+          <View style={{ gap: spacing.sm }}>
+            {pets.map((pet) => (
+              <ListRow
+                key={pet.id}
+                title={pet.name}
+                subtitle={`${pet.breed ?? SPECIES_LABELS[pet.species]} · ${pet.photos.length} photos`}
+                leading={
+                  pet.photos[0] ? (
+                    <View style={{ width: 48, height: 48, borderRadius: 14, overflow: 'hidden' }}>
+                      <PhotoView
+                        url={pet.photos[0].url}
+                        label={`Photo of ${pet.name}`}
+                        style={{ width: 48, height: 48 }}
+                      />
+                    </View>
+                  ) : (
+                    <Icon name="paw" color={colors.primary} />
+                  )
+                }
+                onPress={() => router.push({ pathname: '/pet/[id]', params: { id: pet.id } })}
               />
-            </View>
-          </Section>
-        ) : (
+            ))}
+            <Button
+              label="Add a pet"
+              icon="plus"
+              variant="secondary"
+              onPress={() => router.push({ pathname: '/pet/[id]', params: { id: 'new' } })}
+            />
+          </View>
+        </Section>
+
+        {user.kind === 'animal_lover' && (
           <>
             <Section title="Animals you love">
               <ChoiceChips
@@ -369,43 +384,8 @@ function EditForm({ profile }: { profile: Profile }) {
             </Section>
           </>
         )}
-
-        {user.kind === 'animal_lover' && (
-          <Section title="Allergies">
-            <ChoiceChips
-              multiple
-              label="Allergies"
-              options={speciesOptions}
-              value={draft.allergies}
-              onChange={(allergies) => patch({ allergies })}
-            />
-          </Section>
-        )}
       </Screen>
-      <View
-        style={{
-          paddingHorizontal: spacing.lg,
-          paddingTop: spacing.md,
-          paddingBottom: Math.max(insets.bottom, spacing.md),
-          gap: spacing.xs,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          backgroundColor: colors.background,
-        }}
-      >
-        {dirty && problem ? (
-          <Text variant="small" color="danger" accessibilityLiveRegion="polite">
-            {problem}
-          </Text>
-        ) : null}
-        <Button
-          label="Save changes"
-          icon="check"
-          onPress={() => void save()}
-          disabled={!dirty || !!problem}
-          loading={saving}
-        />
-      </View>
+      <SaveBar dirty={dirty} problem={problem} saving={saving} onSave={() => void save()} />
     </View>
   );
 }

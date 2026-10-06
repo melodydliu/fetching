@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import { kindPatchForPets } from '@/domain/accountKind';
 import type { ID, Pet, Photo, Profile, User } from '@/domain/types';
 import { useServices } from '@/services';
 import type { NewPet } from '@/services/types';
@@ -34,9 +35,18 @@ export function useProfileActions() {
     );
   };
 
+  /** Having a pet is what makes someone a pet owner, so keep `kind` in step with the pet list. */
+  const syncKind = (nextPets: Pet[]) => {
+    const user = queryClient.getQueryData<Profile>(key)?.user;
+    const patch = user && kindPatchForPets(user, nextPets);
+    if (patch) void updateUser(patch);
+  };
+
   const createPet = async (input: Omit<NewPet, 'ownerId'>): Promise<Pet> => {
     const pet = await pets.create({ ...input, ownerId: viewerId! });
-    patchProfile((p) => ({ ...p, pets: [...p.pets, pet] }));
+    const nextPets = [...(queryClient.getQueryData<Profile>(key)?.pets ?? []), pet];
+    patchProfile((p) => ({ ...p, pets: nextPets }));
+    syncKind(nextPets);
     return pet;
   };
 
@@ -52,7 +62,11 @@ export function useProfileActions() {
   };
 
   const removePet = async (id: ID): Promise<void> => {
-    patchProfile((p) => ({ ...p, pets: p.pets.filter((pet) => pet.id !== id) }));
+    const nextPets = (queryClient.getQueryData<Profile>(key)?.pets ?? []).filter(
+      (pet) => pet.id !== id,
+    );
+    patchProfile((p) => ({ ...p, pets: nextPets }));
+    syncKind(nextPets);
     await pets.remove(id).catch(() => rollback());
   };
 

@@ -1,9 +1,8 @@
-import type { Dealbreakers, Gender, Preferences } from './types';
+import type { Dealbreakers, Gender, NotificationSettings, Preferences } from './types';
 
 export const defaultDealbreakers = (): Dealbreakers => ({
   age: false,
   distance: false,
-  genders: false,
   relationshipGoals: false,
   show: false,
   petSpecies: false,
@@ -23,4 +22,11 @@ export const defaultPreferences = (age: number, genders: Gender[]): Preferences 
   petSpecies: [],
   petSizes: [],
   petEnergy: [],
+});
+
+export const defaultNotifications = (): NotificationSettings => ({
+  matches: true,
+  messages: true,
+  likes: true,
+  playDates: true,
 });

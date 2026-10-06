@@ -1,7 +1,7 @@
 import { config } from '@/config';
 import { PROMPTS } from '@/config/prompts';
 import { PERSONALITY_TAGS } from '@/config/reference';
-import { defaultDealbreakers } from '@/domain/defaults';
+import { defaultDealbreakers, defaultNotifications } from '@/domain/defaults';
 import type {
   DogSize,
   EnergyLevel,
@@ -376,7 +376,9 @@ export function buildSeed(now: Date = NOW): SeedData {
     );
     const chosen: string[] = [];
     if (kind === 'pet_owner') chosen.push(pick(PROMPTS.filter((p) => p.category === 'pet')).id);
-    while (chosen.length < 3) {
+    // 1 to 5 answers, picked from the id so it doesn't disturb the seeded random stream.
+    const wanted = 1 + ([...id].reduce((n, c) => n + c.charCodeAt(0), 0) % 5);
+    while (chosen.length < wanted) {
       const p = pick(allPromptIds);
       if (!chosen.includes(p.id)) chosen.push(p.id);
     }
@@ -429,6 +431,7 @@ export function buildSeed(now: Date = NOW): SeedData {
           : undefined,
       preferences,
       dealbreakers,
+      notifications: defaultNotifications(),
       paused: false,
       onboardingComplete: true,
       onboardingSteps: [],

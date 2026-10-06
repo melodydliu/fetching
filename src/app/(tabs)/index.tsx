@@ -2,11 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LikeSheet, type LikePreview } from '@/components/LikeSheet';
 import { ProfileView } from '@/components/ProfileView';
+import { SafetySheet } from '@/components/safety/SafetySheet';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -26,6 +27,16 @@ import { useCandidates, useLikeQuota, useViewerId } from '@/hooks/queries';
 import { useTheme } from '@/hooks/useTheme';
 import { AlreadyLikedError, QuotaExceededError, useServices } from '@/services';
 import { useToastStore } from '@/state/toastStore';
+
+/**
+ * On web the tab slot grows to fit its content, so without a cap the page scrolls and the
+ * floating Skip/Like pair ends up at the very bottom of it. Native screens are already bounded.
+ */
+const webViewportCap = (
+  Platform.OS === 'web'
+    ? { flexGrow: 0, flexBasis: 'auto', height: '100vh', overflow: 'hidden' }
+    : null
+) as ViewStyle | null;
 
 interface LikeDraft {
   block: ProfileBlock;
@@ -56,6 +67,9 @@ export default function DiscoverScreen() {
   const quota = useLikeQuota();
   const [handled, setHandled] = useState<ReadonlySet<ID>>(new Set());
   const [liking, setLiking] = useState<LikeDraft | null>(null);
+  const [safetyOpen, setSafetyOpen] = useState(false);
+  /** The last profile you skipped, so you can take it back. */
+  const [skipped, setSkipped] = useState<{ id: ID; name: string } | null>(null);
 
   const list = candidates.data;
   const current = list?.find((c) => !handled.has(c.user.id));
@@ -80,7 +94,21 @@ export default function DiscoverScreen() {
     if (!current || !viewerId) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     markHandled(current.user.id);
+    setSkipped({ id: current.user.id, name: current.user.firstName });
     void discovery.pass(viewerId, current.user.id);
+  };
+
+  const undoSkip = () => {
+    if (!skipped || !viewerId) return;
+    void Haptics.selectionAsync();
+    const { id } = skipped;
+    setSkipped(null);
+    setHandled((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    void discovery.unpass(viewerId, id).then(() => refetch());
   };
 
   const sendLike = useMutation({
@@ -103,6 +131,7 @@ export default function DiscoverScreen() {
     onSuccess: (result, { draft, isTreat }) => {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       markHandled(draft.toUserId);
+      setSkipped(null);
       setLiking(null);
       void queryClient.invalidateQueries({ queryKey: ['likes'] });
       if (result.match) {
@@ -151,7 +180,7 @@ export default function DiscoverScreen() {
   const padded = { paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.lg };
 
   return (
-    <View style={[styles.flex, { backgroundColor: colors.background }]}>
+    <View style={[styles.flex, webViewportCap, { backgroundColor: colors.background }]}>
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
@@ -203,6 +232,7 @@ export default function DiscoverScreen() {
               distanceMiles={current.distanceMiles}
               likedYou={current.likedYou}
               onLikePress={openLike}
+              onMorePress={() => setSafetyOpen(true)}
               heroOverlay={
                 q ? (
                   <>
@@ -240,6 +270,33 @@ export default function DiscoverScreen() {
         )}
       </ScrollView>
 
+      {skipped && (
+        <Animated.View
+          entering={FadeIn.duration(150)}
+          exiting={FadeOut.duration(150)}
+          style={[styles.undo, { bottom: barBottom + 76 + 84 + 12 }]}
+        >
+          <Pressable
+            onPress={undoSkip}
+            accessibilityRole="button"
+            accessibilityLabel={`Undo skip of ${skipped.name}`}
+            style={[
+              styles.undoButton,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderRadius: radii.pill,
+              },
+            ]}
+          >
+            <Icon name="chevron-left" size={18} color={colors.primary} />
+            <Text variant="smallStrong" color="primary">
+              Undo
+            </Text>
+          </Pressable>
+        </Animated.View>
+      )}
+
       {current && heroBlock && !outOfEverything && (
         <Animated.View
           entering={FadeIn.duration(150)}
@@ -255,6 +312,20 @@ export default function DiscoverScreen() {
           />
         </Animated.View>
       )}
+
+      {current ? (
+        <SafetySheet
+          visible={safetyOpen}
+          userId={current.user.id}
+          name={current.user.firstName}
+          onClose={() => setSafetyOpen(false)}
+          // Blocked or reported people drop out of the feed right away.
+          onDone={() => {
+            markHandled(current.user.id);
+            if (viewerId) void discovery.pass(viewerId, current.user.id);
+          }}
+        />
+      ) : null}
 
       <LikeSheet
         key={liking ? `${liking.toUserId}:${liking.target.id}` : 'closed'}
@@ -282,6 +353,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     gap: 24,
+  },
+  undo: { position: 'absolute', alignSelf: 'center' },
+  undoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    minHeight: 48,
+    paddingHorizontal: 16,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   floatButton: { width: 84, height: 84, alignItems: 'center', justifyContent: 'center' },
 });

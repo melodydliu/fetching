@@ -1,5 +1,5 @@
 import { config } from '@/config';
-import { defaultDealbreakers, defaultPreferences } from '@/domain/defaults';
+import { defaultDealbreakers, defaultNotifications, defaultPreferences } from '@/domain/defaults';
 import type { User } from '@/domain/types';
 import type { AuthService } from '../types';
 import { credentialKey, MockDb, simulate } from './db';
@@ -39,6 +39,7 @@ export function createMockAuth(db: MockDb): AuthService {
           allergies: [],
           preferences: defaultPreferences(30, []),
           dealbreakers: defaultDealbreakers(),
+          notifications: defaultNotifications(),
           paused: false,
           onboardingComplete: false,
           onboardingSteps: [],
@@ -49,6 +50,20 @@ export function createMockAuth(db: MockDb): AuthService {
         db.accounts.set(key, user.id);
         db.sessionUserId = user.id;
         return { userId: user.id };
+      }),
+    getAccount: () =>
+      simulate(() => {
+        const userId = db.sessionUserId;
+        if (!userId) return null;
+        const entry = [...db.accounts.entries()].find(([, id]) => id === userId);
+        if (!entry) return null;
+        const [key] = entry;
+        const method = key.startsWith('phone:') ? 'phone' : 'email';
+        return {
+          method,
+          identifier: key.slice(key.indexOf(':') + 1),
+          createdAt: db.requireUser(userId).createdAt,
+        };
       }),
     signOut: () =>
       simulate(() => {

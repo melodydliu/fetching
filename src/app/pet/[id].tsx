@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import {
   PetBasicsSection,
   PetDetailsSection,
@@ -8,6 +8,7 @@ import {
   PetVibeSection,
 } from '@/components/pets/PetSections';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -24,7 +25,9 @@ import {
 } from '@/domain/petDraft';
 import { pickPhotoUris, useProfileActions } from '@/hooks/profileActions';
 import { useViewerProfile } from '@/hooks/queries';
+import { useDiscardGuard } from '@/hooks/useDiscardGuard';
 import { useTheme } from '@/hooks/useTheme';
+import { confirmAction } from '@/utils/confirm';
 
 /** Add (`/pet/new`) or edit (`/pet/<id>`) a pet. Unlike the rest of profile editing, this one has a Save button. */
 export default function PetEditorScreen() {
@@ -34,7 +37,11 @@ export default function PetEditorScreen() {
     return (
       <Screen scroll>
         <ScreenHeader title="Pet" back />
-        <Skeleton height={320} radius={20} />
+        {profile.isError ? (
+          <ErrorState onRetry={() => void profile.refetch()} />
+        ) : (
+          <Skeleton height={320} radius={20} />
+        )}
       </Screen>
     );
   }
@@ -58,7 +65,7 @@ function PetEditor({
   initial: PetDraft;
   isLastPet: boolean;
 }) {
-  const { colors, spacing } = useTheme();
+  const { spacing } = useTheme();
   const { createPet, updatePet, removePet, uploadPhotos } = useProfileActions();
   const [draft, setDraft] = useState<PetDraft>(initial);
   const [adding, setAdding] = useState(false);
@@ -67,6 +74,7 @@ function PetEditor({
   const patch = (p: Partial<PetDraft>) => setDraft((d) => ({ ...d, ...p }));
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
   const valid = validatePet(draft);
+  const { markSaved } = useDiscardGuard(dirty);
 
   const addPhotos = async () => {
     setAdding(true);
@@ -84,6 +92,7 @@ function PetEditor({
       const fields = draftToPetFields(draft);
       if (petId) await updatePet(petId, fields);
       else await createPet(fields);
+      markSaved();
       router.back();
     } finally {
       setSaving(false);
@@ -91,17 +100,20 @@ function PetEditor({
   };
 
   const confirmDelete = () =>
-    Alert.alert(`Remove ${draft.name || 'this pet'}?`, 'They’ll disappear from your profile.', [
-      { text: 'Keep', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () => {
-          void removePet(petId!);
-          router.back();
-        },
+    confirmAction({
+      title: `Remove ${draft.name || 'this pet'}?`,
+      message: isLastPet
+        ? 'They’ll disappear from your profile, and your profile will show as an Animal Lover.'
+        : 'They’ll disappear from your profile.',
+      confirmLabel: 'Remove',
+      cancelLabel: 'Keep',
+      destructive: true,
+      onConfirm: () => {
+        void removePet(petId!);
+        markSaved();
+        router.back();
       },
-    ]);
+    });
 
   const problems = [
     !validatePetBasics(draft) && 'a name',
@@ -135,21 +147,7 @@ function PetEditor({
             loading={saving}
             onPress={() => void save()}
           />
-          {petId && (
-            <Button
-              label="Remove pet"
-              variant="danger"
-              disabled={isLastPet}
-              onPress={confirmDelete}
-              accessibilityHint={isLastPet ? 'Pet owners need at least one pet' : undefined}
-            />
-          )}
-          {petId && isLastPet && (
-            <Text variant="caption" color="textSubtle" style={{ color: colors.textSubtle }}>
-              Pet owners need at least one pet. No pet right now? Switch to Animal Lover in
-              Settings.
-            </Text>
-          )}
+          {petId && <Button label="Remove pet" variant="danger" onPress={confirmDelete} />}
         </View>
       </View>
     </Screen>

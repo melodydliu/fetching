@@ -126,9 +126,11 @@ export class MockDb {
       }).pass;
     });
 
-    // Incoming likes (the first is a Treat).
+    // Incoming likes (the first is a Treat). A like targets something on the *viewer's* profile.
     others.slice(0, 5).forEach((u, i) => {
-      const prompt = u.promptAnswers[0];
+      const prompt = me.promptAnswers[i % Math.max(me.promptAnswers.length, 1)];
+      const pet = viewer.pets[0];
+      const photo = me.photos[i % me.photos.length]!;
       this.likes.push({
         id: this.nextId('like'),
         fromUserId: u.id,
@@ -136,7 +138,9 @@ export class MockDb {
         target:
           i % 2 === 0 && prompt
             ? { type: 'prompt', id: prompt.id }
-            : { type: 'photo', id: u.photos[0]!.id },
+            : i === 3 && pet
+              ? { type: 'pet', id: pet.id }
+              : { type: 'photo', id: photo.id },
         comment: i % 2 === 0 ? 'This made me laugh out loud.' : undefined,
         isTreat: i === 0,
         createdAt: hoursAgo(2 + i * 5),

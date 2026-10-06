@@ -20,6 +20,7 @@ export type IconName =
   | 'send'
   | 'check'
   | 'plus'
+  | 'minus'
   | 'edit'
   | 'eye'
   | 'alert'
@@ -27,6 +28,8 @@ export type IconName =
   | 'compass'
   | 'calendar'
   | 'cards'
+  | 'more'
+  | 'info'
   | 'home';
 
 interface IconProps {
@@ -131,6 +134,7 @@ export function Icon({ name, size = 24, color, filled = false }: IconProps) {
         </>
       )}
       {name === 'check' && <Path d="M5.5 12.5l4.2 4.2L18.5 7.8" {...stroke} strokeWidth={2.6} />}
+      {name === 'minus' && <Path d="M5 12h14" {...stroke} strokeWidth={2.4} />}
       {name === 'plus' && <Path d="M12 5v14M5 12h14" {...stroke} strokeWidth={2.4} />}
       {name === 'edit' && (
         <Path
@@ -182,6 +186,20 @@ export function Icon({ name, size = 24, color, filled = false }: IconProps) {
         <>
           <Path d="M4 11l8-6.5 8 6.5" {...stroke} />
           <Path d="M6 9.8V19a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9.8" {...stroke} />
+        </>
+      )}
+      {name === 'info' && (
+        <>
+          <Circle cx="12" cy="12" r="9" {...stroke} />
+          <Path d="M12 11v5.5" {...stroke} />
+          <Circle cx="12" cy="7.7" r="1.1" fill={color} />
+        </>
+      )}
+      {name === 'more' && (
+        <>
+          <Circle cx="5.5" cy="12" r="1.8" fill={color} />
+          <Circle cx="12" cy="12" r="1.8" fill={color} />
+          <Circle cx="18.5" cy="12" r="1.8" fill={color} />
         </>
       )}
       {name === 'send' && <Path d="M4 11.5L20 4l-5.5 16-3-6.5z" fill={fill} {...stroke} />}

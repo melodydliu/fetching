@@ -133,3 +133,25 @@ export function useDatePlan(planId: ID | undefined) {
     queryFn: () => chat.getDatePlan(planId!),
   });
 }
+
+/** How the signed-in user logs in (mock: the phone or email they signed up with). */
+export function useAccountInfo() {
+  const { auth } = useServices();
+  const viewerId = useViewerId();
+  return useQuery({
+    queryKey: ['account', viewerId ?? ''],
+    enabled: !!viewerId,
+    queryFn: () => auth.getAccount(),
+  });
+}
+
+/** People the signed-in user has blocked, as full users. */
+export function useBlockedUsers() {
+  const { users } = useServices();
+  const viewerId = useViewerId();
+  return useQuery({
+    queryKey: ['blocked', viewerId ?? ''],
+    enabled: !!viewerId,
+    queryFn: async () => users.getMany(await users.listBlockedIds(viewerId!)),
+  });
+}

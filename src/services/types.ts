@@ -29,6 +29,13 @@ export interface Session {
 
 export type SignInCredentials = { phone: string } | { email: string };
 
+export interface AccountInfo {
+  method: 'phone' | 'email';
+  /** The phone number or email they signed up with. */
+  identifier: string;
+  createdAt: string;
+}
+
 export interface AuthService {
   getSession(): Promise<Session | null>;
   /** Existing account. */
@@ -36,6 +43,8 @@ export interface AuthService {
   /** New account: creates a bare profile (`onboardingComplete: false`) and signs in. */
   signUp(credentials: SignInCredentials): Promise<Session>;
   signOut(): Promise<void>;
+  /** How the signed-in user logs in, for the Account screen. */
+  getAccount(): Promise<AccountInfo | null>;
   deleteAccount(): Promise<void>;
 }
 
@@ -80,6 +89,8 @@ export interface DiscoveryService {
   getCandidates(viewerId: ID, options?: { limit?: number }): Promise<Candidate[]>;
   /** Skip (X). The profile won't be shown again. */
   pass(viewerId: ID, targetUserId: ID): Promise<void>;
+  /** Undo a Skip: the profile can be shown again. */
+  unpass(viewerId: ID, targetUserId: ID): Promise<void>;
 }
 
 export interface LikeQuota {

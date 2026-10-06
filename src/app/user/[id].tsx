@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileView } from '@/components/ProfileView';
+import { SafetySheet } from '@/components/safety/SafetySheet';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Icon } from '@/components/ui/Icon';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -20,7 +22,11 @@ import { describeLikeTarget } from '@/utils/describeLike';
  * Like back / Remove) or from a chat header (no actions).
  */
 export default function UserProfileScreen() {
-  const { id, likeId } = useLocalSearchParams<{ id: string; likeId?: string }>();
+  const { id, likeId, matchId } = useLocalSearchParams<{
+    id: string;
+    likeId?: string;
+    matchId?: string;
+  }>();
   const { colors, radii, shadows, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   const viewerId = useViewerId();
@@ -34,6 +40,7 @@ export default function UserProfileScreen() {
   const like = likeId ? incoming.data?.find((l) => l.id === likeId) : undefined;
 
   const name = profile.data?.user.firstName ?? 'them';
+  const [safetyOpen, setSafetyOpen] = useState(false);
 
   const likeBack = useMutation({
     mutationFn: () => likes.likeBack(likeId!, viewerId!),
@@ -107,6 +114,7 @@ export default function UserProfileScreen() {
                 : undefined
             }
             likedYou={like ? { isTreat: like.isTreat } : null}
+            onMorePress={() => setSafetyOpen(true)}
             heroOverlay={
               like && viewer.data ? (
                 <View
@@ -138,6 +146,22 @@ export default function UserProfileScreen() {
       </ScrollView>
 
       {back}
+
+      {profile.data ? (
+        <SafetySheet
+          visible={safetyOpen}
+          userId={profile.data.user.id}
+          name={name}
+          matchId={matchId}
+          onClose={() => setSafetyOpen(false)}
+          onDone={(outcome) => {
+            if (outcome === 'reported') return;
+            // Leaving a matched person's profile also leaves their (now gone) chat.
+            if (matchId) router.navigate('/matches');
+            else router.back();
+          }}
+        />
+      ) : null}
 
       {like && profile.data ? (
         <View style={[styles.floatBar, { bottom: Math.max(insets.bottom, 12) + 12 }]}>

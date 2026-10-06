@@ -57,5 +57,9 @@ export function createMockDiscovery(db: MockDb): DiscoveryService {
         set.add(targetUserId);
         db.passes.set(viewerId, set);
       }),
+    unpass: (viewerId, targetUserId) =>
+      simulate(() => {
+        db.passes.get(viewerId)?.delete(targetUserId);
+      }),
   };
 }

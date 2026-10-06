@@ -1,4 +1,12 @@
-import type { DogSize, EnergyLevel, PlayDateKind, RelationshipGoal, Species } from '@/domain/types';
+import type {
+  DogSize,
+  EnergyLevel,
+  Gender,
+  PlayDateKind,
+  ReportReason,
+  RelationshipGoal,
+  Species,
+} from '@/domain/types';
 
 export const SPECIES: readonly Species[] = ['dog', 'cat', 'rabbit', 'bird', 'other'];
 
@@ -78,3 +86,26 @@ export const SPECIES_LABELS: Record<Species, string> = {
   bird: 'Bird',
   other: 'Other',
 };
+
+export const GENDER_OPTIONS: { value: Gender; label: string }[] = [
+  { value: 'woman', label: 'Woman' },
+  { value: 'man', label: 'Man' },
+  { value: 'nonbinary', label: 'Nonbinary' },
+];
+
+/** Plural labels for "interested in". */
+export const INTEREST_OPTIONS: { value: Gender; label: string }[] = [
+  { value: 'woman', label: 'Women' },
+  { value: 'man', label: 'Men' },
+  { value: 'nonbinary', label: 'Nonbinary people' },
+];
+
+export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
+  { value: 'fake_profile', label: 'Fake profile' },
+  { value: 'inappropriate_photos', label: 'Inappropriate photos' },
+  { value: 'harassment', label: 'Harassment' },
+  { value: 'spam', label: 'Spam or scam' },
+  { value: 'underage', label: 'Seems underage' },
+  { value: 'animal_welfare', label: 'Animal welfare concern' },
+  { value: 'other', label: 'Something else' },
+];

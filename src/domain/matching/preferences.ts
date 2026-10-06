@@ -62,13 +62,16 @@ export function preferenceChecks(owner: Profile, other: Profile): PreferenceChec
 }
 
 /**
- * Which of `owner`'s dealbreakers `other` breaks. Empty means none.
+ * Which of `owner`'s dealbreakers `other` breaks (their gender preference always counts). Empty means none.
  * A dealbreaker only fires on a known mismatch: skipping a question never gets someone hidden.
  */
 export function dealbreakerViolations(owner: Profile, other: Profile): string[] {
   const { dealbreakers, allergies } = owner.user;
   const broken: string[] = preferenceChecks(owner, other)
-    .filter((c) => dealbreakers[c.rule] && c.set && c.known && !c.satisfied)
+    // The gender preference is always a hard rule; every other one only when switched on.
+    .filter(
+      (c) => (c.rule === 'genders' || dealbreakers[c.rule]) && c.set && c.known && !c.satisfied,
+    )
     .map((c) => c.rule);
 
   const theirSpecies = new Set(other.pets.map((p) => p.species));
@@ -83,7 +86,10 @@ export function dealbreakerViolations(owner: Profile, other: Profile): string[] 
  * Null when there is nothing to judge.
  */
 export function softPreferenceScore(owner: Profile, other: Profile): number | null {
-  const judged = preferenceChecks(owner, other).filter((c) => c.set && c.known);
+  // Gender is a hard rule, so it can't tell anyone apart here.
+  const judged = preferenceChecks(owner, other).filter(
+    (c) => c.rule !== 'genders' && c.set && c.known,
+  );
   if (judged.length === 0) return null;
   return (100 * judged.filter((c) => c.satisfied).length) / judged.length;
 }

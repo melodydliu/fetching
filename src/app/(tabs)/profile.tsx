@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Chip } from '@/components/ui/Chip';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Icon } from '@/components/ui/Icon';
@@ -17,6 +17,16 @@ import { useTheme } from '@/hooks/useTheme';
 export default function ProfileScreen() {
   const { colors, radii, spacing } = useTheme();
   const profile = useViewerProfile();
+
+  /** Each checklist item jumps to the place where it gets done. */
+  const openItem = (key: string) => {
+    const firstPet = profile.data?.pets[0];
+    if (key === 'pets') {
+      router.push({ pathname: '/pet/[id]', params: { id: firstPet?.id ?? 'new' } });
+    } else {
+      router.push('/edit-profile');
+    }
+  };
 
   return (
     <Screen tabbed scroll>
@@ -84,9 +94,19 @@ export default function ProfileScreen() {
                     Your profile is {Math.round(score * 100)}% complete
                   </Text>
                   {todo.slice(0, 3).map((t) => (
-                    <Text key={t.key} variant="small" color="onAccent">
-                      • {t.label}
-                    </Text>
+                    <Pressable
+                      key={t.key}
+                      onPress={() => openItem(t.key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t.label}
+                      accessibilityHint="Opens the screen where you can do this"
+                      style={styles.todoRow}
+                    >
+                      <Text variant="small" color="onAccent" style={styles.todoText}>
+                        • {t.label}
+                      </Text>
+                      <Icon name="chevron-right" size={18} color={colors.onAccent} />
+                    </Pressable>
                   ))}
                 </View>
               )}
@@ -97,6 +117,12 @@ export default function ProfileScreen() {
                   subtitle="Photos, prompts, pets and more"
                   leading={<Icon name="edit" color={colors.primary} />}
                   onPress={() => router.push('/edit-profile')}
+                />
+                <ListRow
+                  title="Preferences"
+                  subtitle="Who you see: age, distance, pets, dealbreakers"
+                  leading={<Icon name="compass" color={colors.primary} />}
+                  onPress={() => router.push('/preferences')}
                 />
                 <ListRow
                   title="Preview"
@@ -121,6 +147,8 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   hero: { alignItems: 'center' },
+  todoRow: { flexDirection: 'row', alignItems: 'center', minHeight: 48, gap: 8 },
+  todoText: { flex: 1 },
   avatar: { width: 128, height: 128, borderRadius: 64, borderWidth: 4, overflow: 'hidden' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
 });

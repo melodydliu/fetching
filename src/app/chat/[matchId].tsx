@@ -3,7 +3,6 @@ import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -17,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DatePlanCard } from '@/components/chat/DatePlanCard';
 import { DateTimePicker } from '@/components/chat/DateTimePicker';
 import { MessageBubble } from '@/components/chat/MessageBubble';
+import { SafetySheet } from '@/components/safety/SafetySheet';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -25,6 +25,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/ui/TextField';
+import { buildChatItems, type ChatItem } from '@/domain/chatItems';
 import { MAX_DATE_NOTE } from '@/domain/datePlans';
 import type { DatePlan, ID, Message } from '@/domain/types';
 import {
@@ -39,6 +40,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useServices } from '@/services';
 import { useToastStore } from '@/state/toastStore';
 import { hitSize } from '@/theme';
+import { confirmAction } from '@/utils/confirm';
 
 const MAX_MESSAGE = 1000;
 
@@ -89,10 +91,14 @@ function PlanMessage({
   });
 
   const confirmDelete = () =>
-    Alert.alert('Delete this Play Date?', `${otherName} will no longer see it in the chat.`, [
-      { text: 'Keep it', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => remove.mutate() },
-    ]);
+    confirmAction({
+      title: 'Delete this Play Date?',
+      message: `${otherName} will no longer see it in the chat.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep it',
+      destructive: true,
+      onConfirm: () => remove.mutate(),
+    });
 
   if (plan.isPending) return <Skeleton height={140} radius={28} />;
   if (!plan.data) return null;
@@ -207,6 +213,7 @@ export default function ChatScreen() {
   const messages = useMessages(matchId);
   const [draft, setDraft] = useState('');
   const [suggesting, setSuggesting] = useState<DatePlan | null>(null);
+  const [safetyOpen, setSafetyOpen] = useState(false);
 
   // Mocked realtime: new messages (from the Dev Menu or the other person) land here.
   useEffect(() => {
@@ -252,7 +259,7 @@ export default function ChatScreen() {
   };
 
   // Newest first for the inverted list.
-  const data = useMemo(() => [...(messages.data ?? [])].reverse(), [messages.data]);
+  const data = useMemo(() => buildChatItems(messages.data ?? []).reverse(), [messages.data]);
   const name = other.data?.user.firstName ?? '';
   const participantIds = match.data?.userIds ?? [];
 
@@ -287,7 +294,12 @@ export default function ChatScreen() {
         </Pressable>
         {other.data ? (
           <Pressable
-            onPress={() => router.push(`/user/${other.data.user.id}`)}
+            onPress={() =>
+              router.push({
+                pathname: '/user/[id]',
+                params: { id: other.data.user.id, matchId },
+              })
+            }
             accessibilityRole="button"
             accessibilityLabel={`View ${name}'s profile`}
             style={[styles.who, { gap: spacing.sm }]}
@@ -300,6 +312,16 @@ export default function ChatScreen() {
         ) : (
           <View style={styles.flex} />
         )}
+        {other.data ? (
+          <Pressable
+            onPress={() => setSafetyOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`More options for ${name}`}
+            style={styles.iconButton}
+          >
+            <Icon name="more" color={colors.text} />
+          </Pressable>
+        ) : null}
       </View>
 
       {loading ? (
@@ -333,9 +355,12 @@ export default function ChatScreen() {
           <FlatList
             inverted
             data={data}
-            keyExtractor={(m) => m.id}
+            keyExtractor={(item: ChatItem) => item.key}
             style={styles.flex}
-            contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
+            contentContainerStyle={[
+              { padding: spacing.lg, gap: spacing.sm },
+              data.length === 0 && { flexGrow: 1, justifyContent: 'center' },
+            ]}
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
               <View style={[styles.empty, { gap: spacing.sm }]}>
@@ -348,9 +373,13 @@ export default function ChatScreen() {
               </View>
             }
             renderItem={({ item }) =>
-              item.kind === 'date_plan' && item.datePlanId ? (
+              item.type === 'day' ? (
+                <Text variant="caption" color="textSubtle" align="center" style={styles.day}>
+                  {item.label}
+                </Text>
+              ) : item.message.kind === 'date_plan' && item.message.datePlanId ? (
                 <PlanMessage
-                  planId={item.datePlanId}
+                  planId={item.message.datePlanId}
                   viewerId={viewerId!}
                   participantIds={participantIds}
                   otherName={name}
@@ -358,9 +387,9 @@ export default function ChatScreen() {
                 />
               ) : (
                 <MessageBubble
-                  text={item.text ?? ''}
-                  mine={item.senderId === viewerId}
-                  time={timeOf(item.createdAt)}
+                  text={item.message.text ?? ''}
+                  mine={item.message.senderId === viewerId}
+                  time={timeOf(item.message.createdAt)}
                 />
               )
             }
@@ -429,6 +458,17 @@ export default function ChatScreen() {
         </>
       )}
 
+      {other.data ? (
+        <SafetySheet
+          visible={safetyOpen}
+          userId={other.data.user.id}
+          name={name}
+          matchId={matchId}
+          onClose={() => setSafetyOpen(false)}
+          onDone={(outcome) => outcome !== 'reported' && router.navigate('/matches')}
+        />
+      ) : null}
+
       {viewerId && suggesting ? (
         <SuggestChangeSheet
           plan={suggesting}
@@ -465,5 +505,6 @@ const styles = StyleSheet.create({
   },
   // The list is inverted, so flip the placeholder back upright.
   empty: { paddingVertical: 48, transform: [{ scaleY: -1 }] },
+  day: { marginVertical: 8 },
   backdrop: { flex: 1, justifyContent: 'flex-end' },
 });

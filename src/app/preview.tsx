@@ -2,6 +2,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileView } from '@/components/ProfileView';
 import { Chip } from '@/components/ui/Chip';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
@@ -28,6 +29,10 @@ export default function PreviewScreen() {
       {profile.data ? (
         <View style={{ marginTop: spacing.lg }}>
           <ProfileView profile={profile.data} />
+        </View>
+      ) : profile.isError ? (
+        <View style={gutter}>
+          <ErrorState onRetry={() => void profile.refetch()} />
         </View>
       ) : (
         <View style={[gutter, { gap: spacing.lg }]}>

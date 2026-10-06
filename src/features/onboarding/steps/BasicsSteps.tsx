@@ -6,7 +6,7 @@ import { OptionCard } from '@/components/ui/OptionCard';
 import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/ui/TextField';
 import { config } from '@/config';
-import { RELATIONSHIP_GOAL_LABELS } from '@/config/reference';
+import { GENDER_OPTIONS, INTEREST_OPTIONS, RELATIONSHIP_GOAL_LABELS } from '@/config/reference';
 import type { BirthdateResult } from '@/domain/onboarding';
 import type { Gender, RelationshipGoal } from '@/domain/types';
 import { useTheme } from '@/hooks/useTheme';
@@ -58,11 +58,7 @@ export function BirthdayStep({ profile, ...step }: StepProps) {
   );
 }
 
-const GENDERS: { value: Gender; label: string }[] = [
-  { value: 'woman', label: 'Woman' },
-  { value: 'man', label: 'Man' },
-  { value: 'nonbinary', label: 'Nonbinary' },
-];
+const GENDERS = GENDER_OPTIONS;
 
 export function GenderStep({ profile, ...step }: StepProps) {
   // A fresh account carries a placeholder gender, so require an explicit tap.
@@ -90,11 +86,7 @@ export function GenderStep({ profile, ...step }: StepProps) {
   );
 }
 
-const INTERESTS: { value: Gender; label: string }[] = [
-  { value: 'woman', label: 'Women' },
-  { value: 'man', label: 'Men' },
-  { value: 'nonbinary', label: 'Nonbinary people' },
-];
+const INTERESTS = INTEREST_OPTIONS;
 
 export function InterestedInStep({ profile, ...step }: StepProps) {
   const [picked, setPicked] = useState<Gender[]>(profile.user.interestedIn);

@@ -52,6 +52,9 @@ function RootNavigator() {
           <Stack.Screen name="settings" />
           <Stack.Screen name="edit-profile" />
           <Stack.Screen name="preview" />
+          <Stack.Screen name="preferences" />
+          <Stack.Screen name="blocked" />
+          <Stack.Screen name="account" />
           <Stack.Screen name="pet/[id]" />
           <Stack.Screen name="user/[id]" />
           <Stack.Screen name="chat/[matchId]" />

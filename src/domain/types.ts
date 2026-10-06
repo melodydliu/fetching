@@ -87,16 +87,23 @@ export interface Preferences {
 export interface Dealbreakers {
   age: boolean;
   distance: boolean;
-  genders: boolean;
   relationshipGoals: boolean;
   show: boolean;
   petSpecies: boolean;
   petSizes: boolean;
   petEnergy: boolean;
   /** "My pet isn't good with …": skip anyone who has these species. */
-  petNotGoodWith: ('dog' | 'cat')[];
+  petNotGoodWith: Species[];
   /** Treat my allergies as a hard filter against pets of those species. */
   allergies: boolean;
+}
+
+/** Which push notifications the user wants (delivery itself comes later with Expo push). */
+export interface NotificationSettings {
+  matches: boolean;
+  messages: boolean;
+  likes: boolean;
+  playDates: boolean;
 }
 
 export interface User {
@@ -116,6 +123,7 @@ export interface User {
   animalLover?: AnimalLoverProfile;
   preferences: Preferences;
   dealbreakers: Dealbreakers;
+  notifications: NotificationSettings;
   paused: boolean;
   onboardingComplete: boolean;
   /** Onboarding step ids completed or skipped, so the flow can resume. */

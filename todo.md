@@ -1,7 +1,7 @@
 # Fetching: status and to-do
 
 A dating app for people whose pets are family. Expo SDK 57 + React Native + TypeScript, running entirely on mock services.
-Last updated after **Phase 3** (code complete, not yet tried on a device). 197 unit tests passing across 12 suites.
+Last updated after **Phase 4**, the device pass and loose-ends cleanup. 275 unit tests passing across 23 suites.
 
 Legend: `[x]` done · `[ ]` to do · `[~]` partly done
 
@@ -70,36 +70,43 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 - [x] Tests: date-plan rules, like back, change-suggested flow
 - [ ] Open items: try it on a device/Expo Go (no screens were run in a simulator yet); no day separators or typing indicator in chat; date plans don't post a system line when answered; no push; unmatch/block/report UI is Phase 4; Likes You rows are still a list, not a grid
 
-## Phase 4: Preferences, settings, safety, polish
-- [ ] **Preferences screen**: age range, distance, gender, relationship goals, "show me: pet owners / animal lovers / both", pet preferences (species, size, energy)
-- [ ] **Dealbreaker toggles** on every preference, plus "my pet isn't good with cats/dogs" and "I'm allergic to [species]" (the filtering logic and types are done and tested; there is no UI, so everyone currently runs on defaults)
-- [ ] **Unmatch, block and report** (with reason picker) from chat **and** profile views (service methods exist; UI doesn't)
-- [ ] Settings: account (mocked) detail screen, notification preferences that persist (UI toggles exist but aren't saved), pause account (done), log out (done), delete account with confirm (done)
-- [ ] Empty/error-state audit across every screen
-- [ ] Accessibility pass (labels, contrast, tap targets, reduce motion) and visual polish; verify dark mode everywhere
-- [ ] Haptics on match (like haptics exist)
+## Phase 4: Preferences, settings, safety, polish (built; device check pending)
+- [x] **Preferences screen** (`app/preferences.tsx`, Profile tab → Preferences): age range steppers, distance, gender (when you're interested in more than one), looking for, show me (pet owners / animal lovers / everyone), their pets (species, dog size, energy). Draft + **Save changes**, discard prompt, "Reset to defaults". Rules in `domain/preferencesDraft.ts`
+- [x] **Dealbreaker toggles** under every preference except age and distance (those always apply, both ways); a toggle is disabled until something is picked and is switched off automatically if you clear the selection
+- [x] **My pet isn't good with dogs/cats** (pet owners) and **I'm allergic to** + "hide people who have these animals" (everyone). Allergies moved here from Edit profile
+- [x] Changing "Interested in" in Edit profile also resets the Gender preference so they never disagree (`profileUpdateFor`)
+- [x] **Unmatch, block and report** (`components/safety/SafetySheet.tsx`): the ⋯ button in the chat header, on the hero of any profile (Discover, Likes You, a match's profile). Report asks for a reason (+ optional details, + "also block"). Blocking removes the match and chat; blocked people drop out of Discover/Likes You. Settings → **Blocked people** lists and undoes blocks
+- [x] Settings: **Account** screen (masked sign-in, member since), **notification preferences now persist** (matches, messages, likes, Play Dates), pause / log out / delete (confirm) as before
+- [x] Empty/error-state audit: every screen that loads data now has loading + error (and empty where it lists); Preview, Pet editor and Onboarding gained error states. The Pet editor also asks before discarding unsaved changes
+- [x] Accessibility: contrast of every text/background token pair is unit-tested in light **and** dark (≥ 4.5:1); steppers expose increment/decrement to screen readers; tap targets re-audited (small icon buttons use hitSlop to reach 48pt); skeletons and animations respect reduce-motion
+- [x] Haptics on match (success haptic on the match moment, and when you like back / mutual like)
+- [ ] Dark mode has been checked by contrast tests only, not by eye on a device
+- [ ] Notification settings are stored but nothing sends push yet (Later)
 
 ---
 
 ## Gaps and loose ends from earlier phases
 - [ ] **Next design task:** rework how pets are viewed on a profile (the tinted "Meet [pet]" panel is a stopgap)
-- [ ] Pet bubbles in the hero could scroll to / open that pet's card
-- [ ] Captions for pet photos (carousel needs a layout for them)
+- [x] Pet bubbles in the hero open that pet's card in a sheet
+- [x] Captions for pet photos (editable in the pet form, shown over the carousel photo)
 - [ ] The hero Like targets the hero photo; consider a true "whole profile" like type (touches Likes You rendering)
 - [x] Other screens that show a profile (Likes You, chat header) use the hero layout via `app/user/[id].tsx`
 - [ ] Preferences "looking for" (Discover filter) is already multi in the data model; its UI comes in Phase 4
-- [ ] Seed users still all have 3 prompts
-- [ ] Animal lovers can't add optional pet photos (brief says optional)
-- [ ] The pet editor tells owners to "switch to Animal Lover in Settings", but Settings has no such option (add it, or change the copy)
+- [x] Seed users now have 1–5 prompts each
+- [ ] Animal lovers can't add optional photos of animals they love (brief says optional; not needed for MVP)
+- [x] There is no account type to pick: a profile is a **pet owner exactly when it has a pet** (`domain/accountKind.ts` keeps `user.kind` in step when a pet is added or the last one removed). Animal lovers get an **Add a pet** button in Edit profile; removing your last pet makes you an animal lover (pet-only prompts are dropped)
 - [x] Edit profile uses a draft with a **Save changes** button (disabled until something changes or while the name/birthday is invalid); leaving with unsaved edits asks to discard. Pets still save on their own screen
 - [x] Name and birthday can now be edited in Edit profile (birthday keeps the 18+ check; the old one stays until the new one is valid)
 - [x] **Location** in Edit profile: "Use my current location" (GPS) or type a city / zip code (geocoded; while mocks are on it keeps the real place name but `config.mockCenter` coordinates, like onboarding)
-- [ ] Gender and "interested in" still can't be edited after onboarding
-- [ ] No undo for Pass
-- [ ] Profile-completeness items on the Profile tab aren't tappable shortcuts
+- [x] Gender and "interested in" are editable in Edit profile (must pick at least one "interested in")
+- [x] **Undo** after Skip on Discover (`discovery.unpass`)
+- [x] Profile-completeness items on the Profile tab are tappable shortcuts (Edit profile, or the pet screen)
+- [x] Device pass (web build in a phone-width frame; native-only things like haptics and GPS still need Expo Go): fixed floating Skip/Like pair landing at the bottom of the page on web, seeded likes pointing at the *sender's* prompts (Likes You said "Liked your prompt"), missing chevron on rows with chips, and confirmation dialogs (Alert does nothing on web: use `utils/confirm.ts`)
+- [x] Chat day separators (Today / Yesterday / date)
+- [ ] Chat typing indicator (not planned for MVP) and Likes You as a grid (list for now)
 - [ ] Rabbit/bird pets use a plain placeholder tile (no sharp photo source found)
 - [ ] Seed photos load from pravatar.cc, dog.ceo and thecatapi.com (needs network; swap for bundled images if that becomes a problem)
-- [ ] Test coverage is domain/service-heavy; add React Native Testing Library component tests for the main screens
+- [x] React Native Testing Library component tests started: `DatePlanCard`, Likes You and Matches screens (`src/test/render.tsx` gives a mock-services render helper; Reanimated is mocked in `jest.setup.ts`). More screens still to cover
 - [ ] App icon and splash are still the Expo template defaults
 - [ ] Unconfirmed: the URL briefly showed `/dev-menu` right after sign-up on the web target; watch for a flash on device
 - [ ] Two web-only React warnings about native accessibility props from library internals (harmless on iOS/Android)
@@ -119,7 +126,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 ```bash
 npm install
 npm start            # scan the QR with Expo Go (use `npx expo start --tunnel` if your Wi-Fi blocks it)
-npm test             # 197 tests
+npm test             # 275 tests
 npm run typecheck && npm run lint
 ```
 Architecture and conventions live in `CLAUDE.md`.

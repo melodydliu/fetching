@@ -29,9 +29,11 @@ export function createMockUsers(db: MockDb): UserRepository {
         if (!db.blocks.some((b) => b.blockerId === blockerId && b.blockedId === blockedId)) {
           db.blocks.push({ blockerId, blockedId });
         }
-        db.matches = db.matches.filter(
-          (m) => !(m.userIds.includes(blockerId) && m.userIds.includes(blockedId)),
+        const dropped = db.matches.filter(
+          (m) => m.userIds.includes(blockerId) && m.userIds.includes(blockedId),
         );
+        db.matches = db.matches.filter((m) => !dropped.includes(m));
+        db.messages = db.messages.filter((msg) => !dropped.some((m) => m.id === msg.matchId));
       }),
     unblock: (blockerId, blockedId) =>
       simulate(() => {

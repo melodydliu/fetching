@@ -31,10 +31,10 @@ export function makeUser(overrides: Partial<User> = {}): User {
       petSizes: [],
       petEnergy: [],
     },
+    notifications: { matches: true, messages: true, likes: true, playDates: true },
     dealbreakers: {
       age: false,
       distance: false,
-      genders: false,
       relationshipGoals: false,
       show: false,
       petSpecies: false,

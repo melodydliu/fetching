@@ -59,14 +59,16 @@ export function createMockDevTools(db: MockDb): DevTools {
         );
         const from = pickRandom(strangers(me).filter((u) => !alreadyLiked.has(u.id)));
         if (!from) return 'Everyone has already liked you.';
-        const answer = from.promptAnswers[0];
+        // Likes target the viewer's own profile.
+        const mine = db.profileOf(me);
+        const answer = mine.user.promptAnswers[0];
         const like: Like = {
           id: db.nextId('like'),
           fromUserId: from.id,
           toUserId: me,
           target: answer
             ? { type: 'prompt', id: answer.id }
-            : { type: 'photo', id: from.photos[0]!.id },
+            : { type: 'photo', id: mine.user.photos[0]!.id },
           comment: pickRandom(COMMENTS),
           isTreat: false,
           createdAt: new Date().toISOString(),

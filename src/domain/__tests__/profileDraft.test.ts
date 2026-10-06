@@ -1,5 +1,5 @@
 import { buildSeed, SEED_VIEWER_ID } from '@/mocks/seed';
-import { changedFields, draftFromUser, draftProblem } from '../profileDraft';
+import { changedFields, draftFromUser, draftProblem, profileUpdateFor } from '../profileDraft';
 
 const user = () => buildSeed(new Date()).users.find((u) => u.id === SEED_VIEWER_ID)!;
 
@@ -24,6 +24,15 @@ describe('changedFields', () => {
     expect(changedFields(u, draft)).toEqual({});
   });
 
+  it('catches gender and interested-in changes', () => {
+    const u = user();
+    const base = draftFromUser(u);
+    const other = u.gender === 'woman' ? 'man' : 'woman';
+    expect(
+      Object.keys(changedFields(u, { ...base, gender: other, interestedIn: ['nonbinary'] })).sort(),
+    ).toEqual(['gender', 'interestedIn']);
+  });
+
   it('catches edits to photos, prompts and location', () => {
     const u = user();
     const base = draftFromUser(u);
@@ -43,5 +52,18 @@ describe('draftProblem', () => {
     expect(draftProblem(base, true)).toBeNull();
     expect(draftProblem({ ...base, firstName: '  ' }, true)).toMatch(/name/);
     expect(draftProblem(base, false)).toMatch(/birthday/);
+    expect(draftProblem({ ...base, interestedIn: [] }, true)).toMatch(/interested/);
+  });
+});
+
+describe('profileUpdateFor', () => {
+  it('passes changes through untouched', () => {
+    expect(profileUpdateFor(user(), { firstName: 'Mel' })).toEqual({ firstName: 'Mel' });
+  });
+  it('keeps the genders preference in step with interested-in', () => {
+    const u = user();
+    const result = profileUpdateFor(u, { interestedIn: ['nonbinary'] });
+    expect(result.interestedIn).toEqual(['nonbinary']);
+    expect(result.preferences).toEqual({ ...u.preferences, genders: ['nonbinary'] });
   });
 });
