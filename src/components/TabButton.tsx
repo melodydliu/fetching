@@ -34,8 +34,8 @@ export const TabButton = forwardRef<View, TabButtonProps>(function TabButton(
         {
           backgroundColor: isFocused ? colors.primary : 'transparent',
           borderRadius: radii.pill,
-          paddingHorizontal: isFocused ? spacing.lg : spacing.md,
-          flexGrow: isFocused ? 0 : 1,
+          paddingHorizontal: spacing.md,
+          flexGrow: 1,
         },
       ]}
     >
@@ -44,7 +44,7 @@ export const TabButton = forwardRef<View, TabButtonProps>(function TabButton(
           name={icon}
           size={24}
           color={fg}
-          filled={isFocused && icon !== 'paw' && icon !== 'user'}
+          filled={isFocused && icon !== 'paw' && icon !== 'user' && icon !== 'cards'}
         />
         {badgeText && !isFocused ? (
           <View
@@ -59,11 +59,6 @@ export const TabButton = forwardRef<View, TabButtonProps>(function TabButton(
           </View>
         ) : null}
       </View>
-      {isFocused ? (
-        <Text variant="smallStrong" style={{ color: fg }}>
-          {label}
-        </Text>
-      ) : null}
     </Pressable>
   );
 });

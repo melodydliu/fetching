@@ -1,7 +1,7 @@
 # Fetching: status and to-do
 
 A dating app for people whose pets are family. Expo SDK 57 + React Native + TypeScript, running entirely on mock services.
-Last updated after **Phase 2** and the **profile redesign** (see below). 184 unit tests passing across 11 suites.
+Last updated after **Phase 3** (code complete, not yet tried on a device). 197 unit tests passing across 12 suites.
 
 Legend: `[x]` done · `[ ]` to do · `[~]` partly done
 
@@ -57,14 +57,18 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 
 ---
 
-## Phase 3: Likes You, matches, chat (next)
-- [ ] **Likes You**: tap a like to view the full profile, **Like back to match** or **Remove**; show exactly what they liked + their comment (the list and Treat-first ordering exist; the actions don't)
-- [ ] Match creation from Likes You (the mock service already creates matches on mutual likes)
-- [ ] **Match moment**: both users' photos plus their pets, haptics, "Send a message" CTA (currently just a toast)
-- [ ] **Match list** with Hinge-style "Your turn" indicators (list and indicator exist; rows don't open anything)
-- [ ] **Chat**: text messages, mocked realtime (simulated replies via Dev Menu)
-- [ ] **Plan a Pup Date** chat action: dog park / patio café / hiking trail / beach / pet store / custom + date/time, rendered as a card the other person can **accept, suggest a change to, or decline**; mock venue suggestions (service methods exist; UI doesn't)
-- [ ] Tests for the new flows
+## Phase 3: Likes You, matches, chat, Play Date (built; needs a pass on a device)
+- [x] **Likes You** rows open the person's full profile (`app/user/[id].tsx`) with what they liked + their comment, and a floating **Remove** / **Like back** pair
+- [x] **Like back** (`likes.likeBack`) creates the match without spending a daily like; Remove hides the like
+- [x] **Match moment** (`app/match-moment.tsx`): both people and their pets, success haptic, "Send a message" / "Keep browsing". Shown after a mutual like in Discover and after Like back
+- [x] **Matches list** rows open the chat; "Your turn" / "New" chips as before
+- [x] **Chat** (`app/chat/[matchId].tsx`): text bubbles, inverted list, composer, read receipts on open, mocked realtime via `chat.subscribe` (Dev Menu: Incoming message / Incoming Play Date plan); header opens their profile
+- [x] **Plan a Play Date** (`app/play-date/[matchId].tsx`, calendar button in the composer): dog park / pet-friendly café / hiking trail / beach / custom, optional free-text address, day + time chips, note. Lands in chat as a card
+- [x] Date card: **Accept**, **Suggest a change** (new day/time + note), **Decline**; the card says whose answer it's waiting on (rules in `domain/datePlans.ts`, tested)
+- [x] **Edit / delete** a Play Date you planned (Edit and Delete buttons on your own card): editing reuses the planner, sends it back to "proposed" so they confirm again; delete asks first and removes the card. Edit is only available before the date; the other person can't edit or delete (they can decline)
+- [x] Dev Menu: "Incoming Play Date plan" and "They accept my Play Date"
+- [x] Tests: date-plan rules, like back, change-suggested flow
+- [ ] Open items: try it on a device/Expo Go (no screens were run in a simulator yet); no day separators or typing indicator in chat; date plans don't post a system line when answered; no push; unmatch/block/report UI is Phase 4; Likes You rows are still a list, not a grid
 
 ## Phase 4: Preferences, settings, safety, polish
 - [ ] **Preferences screen**: age range, distance, gender, relationship goals, "show me: pet owners / animal lovers / both", pet preferences (species, size, energy)
@@ -82,12 +86,15 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 - [ ] Pet bubbles in the hero could scroll to / open that pet's card
 - [ ] Captions for pet photos (carousel needs a layout for them)
 - [ ] The hero Like targets the hero photo; consider a true "whole profile" like type (touches Likes You rendering)
-- [ ] Other screens that show a profile (Likes You, matches) need the new hero layout when built in Phase 3
+- [x] Other screens that show a profile (Likes You, chat header) use the hero layout via `app/user/[id].tsx`
 - [ ] Preferences "looking for" (Discover filter) is already multi in the data model; its UI comes in Phase 4
 - [ ] Seed users still all have 3 prompts
 - [ ] Animal lovers can't add optional pet photos (brief says optional)
 - [ ] The pet editor tells owners to "switch to Animal Lover in Settings", but Settings has no such option (add it, or change the copy)
-- [ ] Name, birthday, gender and "interested in" can't be edited after onboarding
+- [x] Edit profile uses a draft with a **Save changes** button (disabled until something changes or while the name/birthday is invalid); leaving with unsaved edits asks to discard. Pets still save on their own screen
+- [x] Name and birthday can now be edited in Edit profile (birthday keeps the 18+ check; the old one stays until the new one is valid)
+- [x] **Location** in Edit profile: "Use my current location" (GPS) or type a city / zip code (geocoded; while mocks are on it keeps the real place name but `config.mockCenter` coordinates, like onboarding)
+- [ ] Gender and "interested in" still can't be edited after onboarding
 - [ ] No undo for Pass
 - [ ] Profile-completeness items on the Profile tab aren't tappable shortcuts
 - [ ] Rabbit/bird pets use a plain placeholder tile (no sharp photo source found)
@@ -103,7 +110,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 - Supabase: auth, Postgres, storage, realtime chat (add real service implementations, flip `EXPO_PUBLIC_USE_MOCKS=false`)
 - Expo push notifications
 - Photo verification and moderation
-- Real venue search for Pup Dates
+- Suggested venues for Play Dates (removed from the MVP: the planner only takes a typed address). Needs real venue search (e.g. Google Places / Foursquare) near the midpoint of the two matched users, so `chat.suggestVenues(kind, location)` and a `Venue` type would come back
 - Monetization
 
 ---
@@ -112,7 +119,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 ```bash
 npm install
 npm start            # scan the QR with Expo Go (use `npx expo start --tunnel` if your Wi-Fi blocks it)
-npm test             # 184 tests
+npm test             # 197 tests
 npm run typecheck && npm run lint
 ```
 Architecture and conventions live in `CLAUDE.md`.

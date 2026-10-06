@@ -1,6 +1,8 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { router, useNavigation } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BirthdateFields } from '@/components/BirthdateFields';
 import { PhotoGrid } from '@/components/PhotoGrid';
 import { PromptEditor } from '@/components/PromptEditor';
 import { Button } from '@/components/ui/Button';
@@ -16,10 +18,19 @@ import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/ui/TextField';
 import { config } from '@/config';
 import { RELATIONSHIP_GOAL_LABELS, SPECIES, SPECIES_LABELS } from '@/config/reference';
-import type { Basics, Profile, RelationshipGoal } from '@/domain/types';
+import type { BirthdateResult } from '@/domain/onboarding';
+import {
+  changedFields,
+  draftFromUser,
+  draftProblem,
+  type ProfileDraft,
+} from '@/domain/profileDraft';
+import type { Profile, RelationshipGoal } from '@/domain/types';
 import { pickPhotoUris, useProfileActions } from '@/hooks/profileActions';
 import { useViewerProfile } from '@/hooks/queries';
+import { locateMe, lookUpPlace, type LocateResult } from '@/utils/location';
 import { useTheme } from '@/hooks/useTheme';
+import { useToastStore } from '@/state/toastStore';
 
 function Section({
   title,
@@ -46,32 +57,23 @@ function Section({
   );
 }
 
-/** Changes save automatically (optimistically); there is no Save button. */
+/** Edits a draft; nothing is saved until you tap Save changes. */
 export default function EditProfileScreen() {
-  const { colors, spacing } = useTheme();
+  const { spacing } = useTheme();
   const profile = useViewerProfile();
 
+  if (profile.data) return <EditForm profile={profile.data} />;
   return (
     <Screen scroll>
       <ScreenHeader title="Edit profile" back />
-      {profile.isPending ? (
+      {profile.isError ? (
+        <ErrorState onRetry={() => void profile.refetch()} />
+      ) : (
         <View style={{ gap: spacing.md }}>
           <Skeleton height={240} radius={20} />
           <Skeleton height={80} radius={20} />
         </View>
-      ) : profile.isError ? (
-        <ErrorState onRetry={() => void profile.refetch()} />
-      ) : (
-        <EditForm profile={profile.data} />
       )}
-      <Text
-        variant="caption"
-        color="textSubtle"
-        align="center"
-        style={{ color: colors.textSubtle }}
-      >
-        Changes save automatically.
-      </Text>
     </Screen>
   );
 }
@@ -79,174 +81,331 @@ export default function EditProfileScreen() {
 function EditForm({ profile }: { profile: Profile }) {
   const { colors, spacing } = useTheme();
   const { updateUser, uploadPhotos } = useProfileActions();
+  const toast = useToastStore((t) => t.show);
   const { user, pets } = profile;
   const [adding, setAdding] = useState(false);
-  const [basics, setBasics] = useState<Basics>(user.basics);
+  const [draft, setDraft] = useState<ProfileDraft>(() => draftFromUser(user));
+  const patch = (changes: Partial<ProfileDraft>) => setDraft((d) => ({ ...d, ...changes }));
+  const [place, setPlace] = useState('');
+  const [locating, setLocating] = useState<'gps' | 'search' | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [birth, setBirth] = useState<BirthdateResult>({
+    ok: true,
+    birthdate: user.birthdate,
+    age: 0,
+  });
+  const [saving, setSaving] = useState(false);
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const saved = useRef(false);
+
+  const onBirth = useCallback((result: BirthdateResult) => {
+    setBirth(result);
+    if (result.ok) {
+      setDraft((d) =>
+        d.birthdate === result.birthdate ? d : { ...d, birthdate: result.birthdate },
+      );
+    }
+  }, []);
+
+  const changes = changedFields(user, draft);
+  const dirty = Object.keys(changes).length > 0;
+  const problem = draftProblem(draft, birth.ok);
+
+  // Leaving with unsaved edits asks first (back button, swipe, or hardware back).
+  useEffect(
+    () =>
+      navigation.addListener('beforeRemove', (e) => {
+        if (saved.current || !dirty) return;
+        e.preventDefault();
+        Alert.alert('Discard changes?', 'Your edits haven’t been saved.', [
+          { text: 'Keep editing', style: 'cancel' },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => navigation.dispatch(e.data.action),
+          },
+        ]);
+      }),
+    [navigation, dirty],
+  );
+
+  const save = async () => {
+    if (!dirty || problem) return;
+    setSaving(true);
+    await updateUser(changes);
+    saved.current = true;
+    toast('Profile saved');
+    router.back();
+  };
 
   const addPhotos = async () => {
     setAdding(true);
     try {
-      const uris = await pickPhotoUris(config.maxPhotos - user.photos.length);
-      if (uris.length)
-        await updateUser({ photos: [...user.photos, ...(await uploadPhotos(uris))] });
+      const uris = await pickPhotoUris(config.maxPhotos - draft.photos.length);
+      if (uris.length) patch({ photos: [...draft.photos, ...(await uploadPhotos(uris))] });
     } finally {
       setAdding(false);
     }
   };
 
-  const saveBasics = () => {
-    const clean: Basics = {
-      job: basics.job?.trim() || undefined,
-      school: basics.school?.trim() || undefined,
-      hometown: basics.hometown?.trim() || undefined,
-    };
-    void updateUser({ basics: clean });
+  const applyLocation = (result: LocateResult) => {
+    if (result.ok) {
+      setLocationError(null);
+      setPlace('');
+      patch({ location: result.location });
+      return;
+    }
+    setLocationError(
+      {
+        denied: 'Location access is off. Turn it on in your phone settings, or type a city or zip.',
+        not_found: "We couldn't find that place. Try a city name or a zip code.",
+        error: "Couldn't update your location. Try again.",
+      }[result.reason],
+    );
+  };
+
+  const locateWithGps = async () => {
+    setLocating('gps');
+    applyLocation(await locateMe());
+    setLocating(null);
+  };
+
+  const searchPlace = async () => {
+    if (!place.trim() || locating) return;
+    setLocating('search');
+    applyLocation(await lookUpPlace(place));
+    setLocating(null);
   };
 
   const speciesOptions = SPECIES.map((s) => ({ value: s, label: SPECIES_LABELS[s] }));
-  const lover = user.animalLover;
+  const lover = draft.animalLover;
 
   return (
-    <View>
-      <Section
-        title="Photos"
-        hint={`${config.minPhotos}–${config.maxPhotos} photos. Tap one to add a caption. Hold and drag to reorder.`}
-      >
-        <PhotoGrid
-          photos={user.photos}
-          max={config.maxPhotos}
-          minToKeep={config.minPhotos}
-          captions
-          adding={adding}
-          onAddPress={() => void addPhotos()}
-          onChange={(photos) => void updateUser({ photos })}
-        />
-      </Section>
-
-      <Section title="Prompts" hint="Specific answers get more likes.">
-        <PromptEditor
-          kind={user.kind}
-          answers={user.promptAnswers}
-          onChange={(promptAnswers) => void updateUser({ promptAnswers })}
-        />
-      </Section>
-
-      <Section title="About you">
-        <View style={{ gap: spacing.md }}>
-          <TextField
-            label="Job"
-            value={basics.job ?? ''}
-            onChangeText={(job) => setBasics((b) => ({ ...b, job }))}
-            onBlur={saveBasics}
-            maxLength={40}
+    <View style={{ flex: 1 }}>
+      <Screen scroll>
+        <ScreenHeader title="Edit profile" back />
+        <Section
+          title="Photos"
+          hint={`${config.minPhotos}–${config.maxPhotos} photos. Tap one to add a caption. Hold and drag to reorder.`}
+        >
+          <PhotoGrid
+            photos={draft.photos}
+            max={config.maxPhotos}
+            minToKeep={config.minPhotos}
+            captions
+            adding={adding}
+            onAddPress={() => void addPhotos()}
+            onChange={(photos) => patch({ photos })}
           />
-          <TextField
-            label="School"
-            value={basics.school ?? ''}
-            onChangeText={(school) => setBasics((b) => ({ ...b, school }))}
-            onBlur={saveBasics}
-            maxLength={40}
-          />
-          <TextField
-            label="Hometown"
-            value={basics.hometown ?? ''}
-            onChangeText={(hometown) => setBasics((b) => ({ ...b, hometown }))}
-            onBlur={saveBasics}
-            maxLength={40}
-          />
-        </View>
-      </Section>
+        </Section>
 
-      <Section title="Looking for" hint="Pick all that apply.">
-        <ChoiceChips
-          multiple
-          label="Looking for"
-          options={(Object.keys(RELATIONSHIP_GOAL_LABELS) as RelationshipGoal[]).map((g) => ({
-            value: g,
-            label: RELATIONSHIP_GOAL_LABELS[g],
-          }))}
-          value={user.relationshipGoals}
-          onChange={(relationshipGoals) => void updateUser({ relationshipGoals })}
-        />
-      </Section>
+        <Section title="Name and age" hint="We show your age, never your birthday.">
+          <View style={{ gap: spacing.md }}>
+            <TextField
+              label="First name"
+              value={draft.firstName}
+              onChangeText={(firstName) => patch({ firstName })}
+              autoCapitalize="words"
+              autoComplete="given-name"
+              textContentType="givenName"
+              maxLength={30}
+            />
+            <BirthdateFields initial={user.birthdate} onResult={onBirth} />
+          </View>
+        </Section>
 
-      {user.kind === 'pet_owner' ? (
-        <Section title="Your pets" hint="Each pet needs at least 3 photos.">
-          <View style={{ gap: spacing.sm }}>
-            {pets.map((pet) => (
-              <ListRow
-                key={pet.id}
-                title={pet.name}
-                subtitle={`${pet.breed ?? SPECIES_LABELS[pet.species]} · ${pet.photos.length} photos`}
-                leading={
-                  pet.photos[0] ? (
-                    <View style={{ width: 48, height: 48, borderRadius: 14, overflow: 'hidden' }}>
-                      <PhotoView
-                        url={pet.photos[0].url}
-                        label={`Photo of ${pet.name}`}
-                        style={{ width: 48, height: 48 }}
-                      />
-                    </View>
-                  ) : (
-                    <Icon name="paw" color={colors.primary} />
-                  )
-                }
-                onPress={() => router.push({ pathname: '/pet/[id]', params: { id: pet.id } })}
-              />
-            ))}
-            <Button
-              label="Add a pet"
-              icon="plus"
-              variant="secondary"
-              onPress={() => router.push({ pathname: '/pet/[id]', params: { id: 'new' } })}
+        <Section title="About you">
+          <View style={{ gap: spacing.md }}>
+            <TextField
+              label="Job"
+              value={draft.basics.job ?? ''}
+              onChangeText={(job) => patch({ basics: { ...draft.basics, job } })}
+              maxLength={40}
+            />
+            <TextField
+              label="Hometown"
+              value={draft.basics.hometown ?? ''}
+              onChangeText={(hometown) => patch({ basics: { ...draft.basics, hometown } })}
+              maxLength={40}
             />
           </View>
         </Section>
-      ) : (
-        <>
-          <Section title="Animals you love">
-            <ChoiceChips
-              multiple
-              label="Animals you love"
-              options={speciesOptions}
-              value={lover?.lovedSpecies ?? []}
-              onChange={(lovedSpecies) =>
-                void updateUser({
-                  animalLover: { openToPetSpecies: lover?.openToPetSpecies ?? [], lovedSpecies },
-                })
-              }
-            />
-          </Section>
-          <Section
-            title="Open to dating someone with"
-            hint="Leave empty if you'd rather date someone without pets."
-          >
-            <ChoiceChips
-              multiple
-              label="Open to pets"
-              options={speciesOptions}
-              value={lover?.openToPetSpecies ?? []}
-              onChange={(openToPetSpecies) =>
-                void updateUser({
-                  animalLover: { lovedSpecies: lover?.lovedSpecies ?? [], openToPetSpecies },
-                })
-              }
-            />
-          </Section>
-        </>
-      )}
 
-      {user.kind === 'animal_lover' && (
-        <Section title="Allergies">
+        <Section
+          title="Location"
+          hint="Used to show people and pets nearby. Others see your distance, never your address."
+        >
+          <View style={{ gap: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Icon name="pin" size={20} color={colors.primary} />
+              <Text
+                variant="bodyStrong"
+                accessibilityLabel={`Current location: ${draft.location.city}`}
+              >
+                {draft.location.city}
+              </Text>
+            </View>
+            <Button
+              label="Use my current location"
+              variant="secondary"
+              icon="pin"
+              loading={locating === 'gps'}
+              disabled={locating === 'search'}
+              onPress={() => void locateWithGps()}
+            />
+            <TextField
+              label="Or type a city or zip code"
+              value={place}
+              onChangeText={(t) => {
+                setPlace(t);
+                setLocationError(null);
+              }}
+              placeholder="Oakland, or 94607"
+              autoCapitalize="words"
+              autoComplete="postal-code"
+              returnKeyType="search"
+              onSubmitEditing={() => void searchPlace()}
+              maxLength={60}
+            />
+            <Button
+              label="Set location"
+              variant="secondary"
+              loading={locating === 'search'}
+              disabled={!place.trim() || locating === 'gps'}
+              onPress={() => void searchPlace()}
+            />
+            {locationError ? (
+              <Text variant="small" color="danger" accessibilityLiveRegion="polite">
+                {locationError}
+              </Text>
+            ) : null}
+          </View>
+        </Section>
+
+        <Section title="Looking for" hint="Pick all that apply.">
           <ChoiceChips
             multiple
-            label="Allergies"
-            options={speciesOptions}
-            value={user.allergies}
-            onChange={(allergies) => void updateUser({ allergies })}
+            label="Looking for"
+            options={(Object.keys(RELATIONSHIP_GOAL_LABELS) as RelationshipGoal[]).map((g) => ({
+              value: g,
+              label: RELATIONSHIP_GOAL_LABELS[g],
+            }))}
+            value={draft.relationshipGoals}
+            onChange={(relationshipGoals) => patch({ relationshipGoals })}
           />
         </Section>
-      )}
+
+        <Section title="Prompts" hint="Specific answers get more likes.">
+          <PromptEditor
+            kind={user.kind}
+            answers={draft.promptAnswers}
+            onChange={(promptAnswers) => patch({ promptAnswers })}
+          />
+        </Section>
+
+        {user.kind === 'pet_owner' ? (
+          <Section title="Your pets" hint="Each pet needs at least 3 photos.">
+            <View style={{ gap: spacing.sm }}>
+              {pets.map((pet) => (
+                <ListRow
+                  key={pet.id}
+                  title={pet.name}
+                  subtitle={`${pet.breed ?? SPECIES_LABELS[pet.species]} · ${pet.photos.length} photos`}
+                  leading={
+                    pet.photos[0] ? (
+                      <View style={{ width: 48, height: 48, borderRadius: 14, overflow: 'hidden' }}>
+                        <PhotoView
+                          url={pet.photos[0].url}
+                          label={`Photo of ${pet.name}`}
+                          style={{ width: 48, height: 48 }}
+                        />
+                      </View>
+                    ) : (
+                      <Icon name="paw" color={colors.primary} />
+                    )
+                  }
+                  onPress={() => router.push({ pathname: '/pet/[id]', params: { id: pet.id } })}
+                />
+              ))}
+              <Button
+                label="Add a pet"
+                icon="plus"
+                variant="secondary"
+                onPress={() => router.push({ pathname: '/pet/[id]', params: { id: 'new' } })}
+              />
+            </View>
+          </Section>
+        ) : (
+          <>
+            <Section title="Animals you love">
+              <ChoiceChips
+                multiple
+                label="Animals you love"
+                options={speciesOptions}
+                value={lover?.lovedSpecies ?? []}
+                onChange={(lovedSpecies) =>
+                  patch({
+                    animalLover: { openToPetSpecies: lover?.openToPetSpecies ?? [], lovedSpecies },
+                  })
+                }
+              />
+            </Section>
+            <Section
+              title="Open to dating someone with"
+              hint="Leave empty if you'd rather date someone without pets."
+            >
+              <ChoiceChips
+                multiple
+                label="Open to pets"
+                options={speciesOptions}
+                value={lover?.openToPetSpecies ?? []}
+                onChange={(openToPetSpecies) =>
+                  patch({
+                    animalLover: { lovedSpecies: lover?.lovedSpecies ?? [], openToPetSpecies },
+                  })
+                }
+              />
+            </Section>
+          </>
+        )}
+
+        {user.kind === 'animal_lover' && (
+          <Section title="Allergies">
+            <ChoiceChips
+              multiple
+              label="Allergies"
+              options={speciesOptions}
+              value={draft.allergies}
+              onChange={(allergies) => patch({ allergies })}
+            />
+          </Section>
+        )}
+      </Screen>
+      <View
+        style={{
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.md,
+          paddingBottom: Math.max(insets.bottom, spacing.md),
+          gap: spacing.xs,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          backgroundColor: colors.background,
+        }}
+      >
+        {dirty && problem ? (
+          <Text variant="small" color="danger" accessibilityLiveRegion="polite">
+            {problem}
+          </Text>
+        ) : null}
+        <Button
+          label="Save changes"
+          icon="check"
+          onPress={() => void save()}
+          disabled={!dirty || !!problem}
+          loading={saving}
+        />
+      </View>
     </View>
   );
 }

@@ -15,11 +15,10 @@ import type {
   Pet,
   Photo,
   Profile,
-  PupDateKind,
+  PlayDateKind,
   Report,
   ReportReason,
   User,
-  Venue,
 } from '@/domain/types';
 
 export type Unsubscribe = () => void;
@@ -124,6 +123,11 @@ export interface LikeRepository {
   listIncoming(userId: ID): Promise<Like[]>;
   /** Remove an incoming like. */
   remove(likeId: ID): Promise<void>;
+  /**
+   * Like someone back from Likes You: always creates the match and doesn't spend a daily like
+   * (they already spent theirs on you).
+   */
+  likeBack(likeId: ID, viewerId: ID): Promise<Match>;
   getQuota(userId: ID): Promise<LikeQuota>;
 }
 
@@ -146,12 +150,14 @@ export interface MatchRepository {
 export interface ProposeDateInput {
   matchId: ID;
   proposerId: ID;
-  kind: PupDateKind;
+  kind: PlayDateKind;
   customLabel?: string;
-  venue?: Venue;
+  location?: string;
   startsAt: string;
   note?: string;
 }
+
+export type UpdateDateInput = Omit<ProposeDateInput, 'matchId' | 'proposerId'>;
 
 export interface ChatRepository {
   listMessages(matchId: ID): Promise<Message[]>;
@@ -161,12 +167,15 @@ export interface ChatRepository {
   subscribe(matchId: ID, onMessage: (message: Message) => void): Unsubscribe;
   proposeDate(input: ProposeDateInput): Promise<{ plan: DatePlan; message: Message }>;
   getDatePlan(planId: ID): Promise<DatePlan | null>;
+  /** Proposer only. Replaces the details and puts the plan back to "proposed" for the other person. */
+  updateDatePlan(planId: ID, editorId: ID, input: UpdateDateInput): Promise<DatePlan>;
+  /** Proposer only. Removes the plan and its card from the chat. */
+  deleteDatePlan(planId: ID, deleterId: ID): Promise<void>;
   respondToDatePlan(
     planId: ID,
     response: Exclude<DatePlanStatus, 'proposed'>,
-    options?: { note?: string; newStartsAt?: string },
+    options: { responderId: ID; note?: string; newStartsAt?: string },
   ): Promise<DatePlan>;
-  suggestVenues(kind: PupDateKind): Promise<Venue[]>;
 }
 
 export interface MediaService {
@@ -187,6 +196,10 @@ export interface DevTools {
   simulateIncomingLike(): Promise<string>;
   simulateNewMatch(): Promise<string>;
   simulateIncomingMessage(): Promise<string>;
+  /** The other person proposes a Play Date in a random match. */
+  simulateIncomingDatePlan(): Promise<string>;
+  /** The other person answers the viewer's latest open Play Date plan. */
+  simulateDateReply(): Promise<string>;
 }
 
 export interface Services {

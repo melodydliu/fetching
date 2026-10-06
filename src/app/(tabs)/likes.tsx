@@ -63,7 +63,13 @@ export default function LikesYouScreen() {
                   .filter(Boolean)
                   .join('\n')}
                 trailing={like.isTreat ? <Chip label="Treat" tone="accent" /> : undefined}
-                chevron={false}
+                onPress={() =>
+                  router.push({
+                    pathname: '/user/[id]',
+                    params: { id: sender.id, likeId: like.id },
+                  })
+                }
+                accessibilityHint="Opens their profile"
               />
             );
           })}

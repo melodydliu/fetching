@@ -53,6 +53,13 @@ function RootNavigator() {
           <Stack.Screen name="edit-profile" />
           <Stack.Screen name="preview" />
           <Stack.Screen name="pet/[id]" />
+          <Stack.Screen name="user/[id]" />
+          <Stack.Screen name="chat/[matchId]" />
+          <Stack.Screen name="play-date/[matchId]" options={{ presentation: 'modal' }} />
+          <Stack.Screen
+            name="match-moment"
+            options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }}
+          />
           <Stack.Screen name="dev-menu" options={{ presentation: 'modal' }} />
         </Stack.Protected>
         <Stack.Protected guard={onboarding}>

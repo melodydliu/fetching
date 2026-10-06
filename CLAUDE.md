@@ -22,7 +22,7 @@ src/app/            Expo Router routes only. (tabs)/ = Discover, Likes You, Matc
 src/domain/         Pure TS: types.ts (all models), geo.ts, and (Phase 2) matching/. NO UI or service imports.
 src/services/       types.ts = interfaces (the only thing UI imports). index.tsx = provider + switch.
 src/services/mock/  In-memory implementations over MockDb, with 200-500ms simulated latency.
-src/mocks/          Seed generator (deterministic), prompt answers, venues, image URL pools.
+src/mocks/          Seed generator (deterministic), prompt answers, image URL pools.
 src/config/         index.ts (all knobs), prompts.ts (30 prompts), reference.ts (breeds, labels).
 src/theme/          Colors (light + dark), type scale, spacing, radii. The ONLY place for style tokens.
 src/components/ui/  Primitives (Text, Button, Screen, ListRow, Skeleton, EmptyState...).
@@ -63,6 +63,12 @@ All in `src/domain/matching/` (pure, no UI or services). Every weight lives in `
 - Profile content: `user.relationshipGoals` is multi-select (empty = unknown/neutral; any overlap counts in matching). Prompts: 1-10 (`config.minPromptAnswers`/`maxPromptAnswers`). Person photos can carry a caption (`PhotoGrid captions`, `CaptionModal`); pet photos don't yet.
 - Preferences UI doesn't exist until Phase 4, so everyone runs on defaults (age = yours -8/+10, 25 miles).
 
+## Chat & Play Date (Phase 3)
+- Routes: `user/[id]` (any profile; `?likeId=` adds the Like back / Remove bar), `chat/[matchId]`, `play-date/[matchId]` (modal), `match-moment` (full-screen modal, `?matchId=`).
+- `likes.likeBack(likeId, viewerId)` matches without spending a daily like. Mutual likes sent from Discover also go to the match moment.
+- Chat uses TanStack Query for messages; `chat.subscribe` pushes new ones into the cache (dedupe by id). Opening a chat marks it read.
+- Date plan rules are pure (`domain/datePlans.ts`): `DatePlan.respondedById` records who last answered; a suggested change waits on the *other* person. Only the proposer can edit (future dates only; resets to `proposed`) or delete (`/play-date/[matchId]?planId=` is the edit mode of the planner). Day/time picking uses plain chips (`components/chat/DateTimePicker.tsx`), no native picker dependency.
+
 ## Mock accounts
 Logins are remembered per account (`MockDb.accounts`). Log in with `config.demoAccountEmail` for the seeded demo user; an account you create via onboarding is only reachable with the phone/email you made it with. Unknown logins fail, like a real backend.
 
@@ -78,5 +84,6 @@ Illustrations are our own SVG spot art (`components/illustrations`), placeholder
 - Phase 0 (done): setup, theme, nav shell, services + mocks, seed, Dev Menu, docs.
 - Phase 1 (done): onboarding (both user types), profile view/edit/preview, pet profiles, photo management with drag-reorder.
 - Phase 2 (done): matching module + tests, Discover (full profile scroll, per-item likes with comments, Skip), daily like limit, Treat, (pet compatibility drives ranking but is not displayed).
-- Phase 3: Likes You, matches, chat, Pup Date. Phase 4: preferences, settings, safety, polish.
-- Later (not now): Supabase, push, verification/moderation, venue search, monetization.
+- Phase 3 (built, untested on device): Likes You -> profile -> Like back/Remove, match moment, matches list, chat, Play Date cards.
+- Phase 4: preferences, settings, safety (unmatch/block/report UI), polish.
+- Later (not now): Supabase, push, verification/moderation, suggested venues for Play Dates, monetization.

@@ -52,8 +52,7 @@ export default function MatchesScreen() {
                 leading={<Avatar url={other.photos[0]!.url} name={other.firstName} />}
                 title={other.firstName}
                 subtitle={
-                  m.lastMessage?.text ??
-                  (m.lastMessage ? 'Sent a pup date plan' : 'You matched! Say hi.')
+                  m.lastMessage?.text ?? (m.lastMessage ? 'Play Date plan' : 'You matched! Say hi.')
                 }
                 trailing={
                   m.yourTurn ? (
@@ -62,7 +61,10 @@ export default function MatchesScreen() {
                     <Chip label="New" tone="accent" />
                   ) : undefined
                 }
-                chevron={false}
+                onPress={() =>
+                  router.push({ pathname: '/chat/[matchId]', params: { matchId: m.match.id } })
+                }
+                accessibilityHint="Opens the chat"
               />
             );
           })}

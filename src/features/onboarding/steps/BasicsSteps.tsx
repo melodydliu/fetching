@@ -1,15 +1,16 @@
-import * as Location from 'expo-location';
-import { useRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { View } from 'react-native';
+import { BirthdateFields } from '@/components/BirthdateFields';
 import { SpotIllustration } from '@/components/illustrations/SpotIllustration';
 import { OptionCard } from '@/components/ui/OptionCard';
 import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/ui/TextField';
 import { config } from '@/config';
 import { RELATIONSHIP_GOAL_LABELS } from '@/config/reference';
-import { BIRTHDATE_MESSAGES, validateBirthdate } from '@/domain/onboarding';
+import type { BirthdateResult } from '@/domain/onboarding';
 import type { Gender, RelationshipGoal } from '@/domain/types';
 import { useTheme } from '@/hooks/useTheme';
+import { locateMe } from '@/utils/location';
 import { StepLayout } from '../StepLayout';
 import type { StepProps } from '../types';
 
@@ -42,17 +43,7 @@ export function NameStep({ profile, ...step }: StepProps) {
 }
 
 export function BirthdayStep({ profile, ...step }: StepProps) {
-  const [y0, m0, d0] = profile.user.birthdate ? profile.user.birthdate.split('-') : ['', '', ''];
-  const [month, setMonth] = useState(m0 ? String(Number(m0)) : '');
-  const [day, setDay] = useState(d0 ? String(Number(d0)) : '');
-  const [year, setYear] = useState(y0 ?? '');
-  const dayRef = useRef<TextInput>(null);
-  const yearRef = useRef<TextInput>(null);
-
-  const result = validateBirthdate(month, day, year);
-  const message = result.ok ? null : BIRTHDATE_MESSAGES[result.reason];
-  const digits = (s: string) => s.replace(/[^0-9]/g, '');
-
+  const [result, setResult] = useState<BirthdateResult>({ ok: false, reason: 'incomplete' });
   return (
     <StepLayout
       title="When's your birthday?"
@@ -62,61 +53,7 @@ export function BirthdayStep({ profile, ...step }: StepProps) {
       primaryDisabled={!result.ok}
       onPrimary={() => result.ok && step.onContinue({ birthdate: result.birthdate })}
     >
-      <View style={{ flexDirection: 'row', gap: 12 }}>
-        <View style={{ flex: 1 }}>
-          <TextField
-            label="Month"
-            value={month}
-            onChangeText={(t) => {
-              const v = digits(t);
-              setMonth(v);
-              if (v.length === 2) dayRef.current?.focus();
-            }}
-            placeholder="MM"
-            keyboardType="number-pad"
-            maxLength={2}
-            autoFocus
-            style={{ textAlign: 'center' }}
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          <TextField
-            ref={dayRef}
-            label="Day"
-            value={day}
-            onChangeText={(t) => {
-              const v = digits(t);
-              setDay(v);
-              if (v.length === 2) yearRef.current?.focus();
-            }}
-            placeholder="DD"
-            keyboardType="number-pad"
-            maxLength={2}
-            style={{ textAlign: 'center' }}
-          />
-        </View>
-        <View style={{ flex: 1.6 }}>
-          <TextField
-            ref={yearRef}
-            label="Year"
-            value={year}
-            onChangeText={(t) => setYear(digits(t))}
-            placeholder="YYYY"
-            keyboardType="number-pad"
-            maxLength={4}
-            style={{ textAlign: 'center' }}
-          />
-        </View>
-      </View>
-      {message ? (
-        <Text variant="small" color="danger" accessibilityLiveRegion="polite">
-          {message}
-        </Text>
-      ) : result.ok ? (
-        <Text variant="bodyStrong" color="sageStrong" accessibilityLiveRegion="polite">
-          You&apos;re {result.age}.
-        </Text>
-      ) : null}
+      <BirthdateFields autoFocus initial={profile.user.birthdate} onResult={setResult} />
     </StepLayout>
   );
 }
@@ -202,21 +139,9 @@ export function LocationStep({ profile, ...step }: StepProps) {
 
   const requestLocation = async () => {
     setState('loading');
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return setState('denied');
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const [place] = await Location.reverseGeocodeAsync(pos.coords).catch(() => []);
-      const city = place?.city ?? place?.subregion ?? place?.region ?? 'Near you';
-      // Mock data is seeded around config.mockCenter, so while mocks are on we keep
-      // those coordinates (but the real place name) or Discover would be empty away from home.
-      const coords = config.useMocks
-        ? { lat: config.mockCenter.lat, lng: config.mockCenter.lng }
-        : { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      step.onContinue({ location: { ...coords, city } });
-    } catch {
-      setState('error');
-    }
+    const result = await locateMe();
+    if (result.ok) return step.onContinue({ location: result.location });
+    setState(result.reason === 'denied' ? 'denied' : 'error');
   };
 
   return (

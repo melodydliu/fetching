@@ -6,8 +6,8 @@ import { useIncomingLikes, useMatches } from '@/hooks/queries';
 import { useTheme } from '@/hooks/useTheme';
 
 /**
- * Headless tabs with a floating pill bar. The active tab expands into a
- * labelled berry capsule; inactive tabs stay icon-only (and screen-reader labelled).
+ * Headless tabs with a floating pill bar. Icon-only: the active tab sits in a berry capsule,
+ * and every tab keeps its screen-reader label.
  */
 export default function TabsLayout() {
   const { colors, radii, shadows } = useTheme();
@@ -33,7 +33,7 @@ export default function TabsLayout() {
         ]}
       >
         <TabTrigger name="index" href="/" asChild>
-          <TabButton icon="paw" label="Discover" />
+          <TabButton icon="cards" label="Discover" />
         </TabTrigger>
         <TabTrigger name="likes" href="/likes" asChild>
           <TabButton icon="heart" label="Likes You" badge={likes.data?.length} />

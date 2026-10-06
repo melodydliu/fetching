@@ -1,5 +1,4 @@
 import type { DatePlan, Message } from '@/domain/types';
-import { venuesFor } from '@/mocks/venues';
 import type { ChatRepository } from '../types';
 import { MockDb, simulate } from './db';
 
@@ -57,6 +56,37 @@ export function createMockChat(db: MockDb): ChatRepository {
         return { plan, message };
       }),
     getDatePlan: (planId) => simulate(() => db.datePlans.get(planId) ?? null),
+    updateDatePlan: (planId, editorId, input) =>
+      simulate(() => {
+        const plan = db.datePlans.get(planId);
+        if (!plan) throw new Error(`Date plan not found: ${planId}`);
+        if (plan.proposerId !== editorId)
+          throw new Error('Only the person who planned it can edit');
+        const next: DatePlan = {
+          id: plan.id,
+          matchId: plan.matchId,
+          proposerId: plan.proposerId,
+          createdAt: plan.createdAt,
+          kind: input.kind,
+          customLabel: input.kind === 'custom' ? input.customLabel : undefined,
+          location: input.location,
+          startsAt: input.startsAt,
+          note: input.note,
+          status: 'proposed',
+          respondedById: undefined,
+        };
+        db.datePlans.set(planId, next);
+        return next;
+      }),
+    deleteDatePlan: (planId, deleterId) =>
+      simulate(() => {
+        const plan = db.datePlans.get(planId);
+        if (!plan) return;
+        if (plan.proposerId !== deleterId)
+          throw new Error('Only the person who planned it can delete');
+        db.datePlans.delete(planId);
+        db.messages = db.messages.filter((m) => m.datePlanId !== planId);
+      }),
     respondToDatePlan: (planId, response, options) =>
       simulate(() => {
         const plan = db.datePlans.get(planId);
@@ -64,12 +94,12 @@ export function createMockChat(db: MockDb): ChatRepository {
         const next: DatePlan = {
           ...plan,
           status: response,
-          note: options?.note ?? plan.note,
-          startsAt: options?.newStartsAt ?? plan.startsAt,
+          respondedById: options.responderId,
+          note: options.note ?? plan.note,
+          startsAt: options.newStartsAt ?? plan.startsAt,
         };
         db.datePlans.set(planId, next);
         return next;
       }),
-    suggestVenues: (kind) => simulate(() => venuesFor(kind)),
   };
 }

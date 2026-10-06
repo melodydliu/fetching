@@ -107,7 +107,7 @@ export default function DiscoverScreen() {
       void queryClient.invalidateQueries({ queryKey: ['likes'] });
       if (result.match) {
         void queryClient.invalidateQueries({ queryKey: ['matches'] });
-        toast(`It's a match with ${draft.name}!`);
+        router.push({ pathname: '/match-moment', params: { matchId: result.match.id } });
       } else {
         toast(isTreat ? `Treat sent to ${draft.name}` : `Like sent to ${draft.name}`);
       }

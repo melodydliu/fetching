@@ -161,7 +161,7 @@ export function profileCompleteness(profile: Profile): {
     {
       key: 'basics',
       label: 'Add your job or hometown',
-      done: !!(user.basics.job || user.basics.hometown || user.basics.school),
+      done: !!(user.basics.job || user.basics.hometown),
     },
     user.kind === 'pet_owner'
       ? {

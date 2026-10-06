@@ -86,6 +86,21 @@ export function createMockLikes(db: MockDb): LikeRepository {
               Number(b.isTreat) - Number(a.isTreat) || b.createdAt.localeCompare(a.createdAt),
           ),
       ),
+    likeBack: (likeId, viewerId) =>
+      simulate(() => {
+        const like = db.likes.find((l) => l.id === likeId && l.toUserId === viewerId);
+        if (!like || db.removedLikeIds.has(like.id)) throw new Error('That like is gone');
+        if (db.isBlocked(viewerId, like.fromUserId)) throw new Error('You can no longer match');
+        const existing = db.findMatch(viewerId, like.fromUserId);
+        if (existing) return existing;
+        const match: Match = {
+          id: db.nextId('match'),
+          userIds: [viewerId, like.fromUserId],
+          createdAt: new Date().toISOString(),
+        };
+        db.matches.push(match);
+        return match;
+      }),
     remove: (likeId) =>
       simulate(() => {
         db.removedLikeIds.add(likeId);

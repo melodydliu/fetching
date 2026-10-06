@@ -1,4 +1,5 @@
 import { config } from '@/config';
+import { awaitingResponseFrom } from '@/domain/datePlans';
 import { AlreadyLikedError, QuotaExceededError, type Services } from '@/services/types';
 import { SEED_VIEWER_ID } from '@/mocks/seed';
 import { createMockServices, MockDb } from '..';
@@ -210,19 +211,81 @@ describe('matches and chat', () => {
     expect(after.yourTurn).toBe(false);
   });
 
-  it('supports proposing and responding to a pup date', async () => {
+  it('supports proposing and responding to a play date', async () => {
     const { match } = (await s.matches.list(SEED_VIEWER_ID))[0]!;
     const { plan, message } = await s.chat.proposeDate({
       matchId: match.id,
       proposerId: SEED_VIEWER_ID,
       kind: 'dog_park',
+      location: '120 Meadow Ln',
       startsAt: '2026-10-10T17:00:00.000Z',
     });
+    expect(plan.location).toBe('120 Meadow Ln');
     expect(message.kind).toBe('date_plan');
     expect(plan.status).toBe('proposed');
-    const accepted = await s.chat.respondToDatePlan(plan.id, 'accepted');
+    const other = match.userIds.find((id) => id !== SEED_VIEWER_ID)!;
+    const accepted = await s.chat.respondToDatePlan(plan.id, 'accepted', { responderId: other });
     expect(accepted.status).toBe('accepted');
-    expect((await s.chat.suggestVenues('dog_park')).length).toBeGreaterThan(0);
+    expect(accepted.respondedById).toBe(other);
+  });
+
+  it('records who suggested a change, so the other person answers next', async () => {
+    const { match } = (await s.matches.list(SEED_VIEWER_ID))[0]!;
+    const other = match.userIds.find((id) => id !== SEED_VIEWER_ID)!;
+    const { plan } = await s.chat.proposeDate({
+      matchId: match.id,
+      proposerId: SEED_VIEWER_ID,
+      kind: 'custom',
+      customLabel: 'Puppy yoga',
+      startsAt: '2026-10-10T17:00:00.000Z',
+    });
+    const changed = await s.chat.respondToDatePlan(plan.id, 'change_suggested', {
+      responderId: other,
+      newStartsAt: '2026-10-11T11:00:00.000Z',
+      note: 'Sunday works better',
+    });
+    expect(changed).toMatchObject({
+      status: 'change_suggested',
+      respondedById: other,
+      startsAt: '2026-10-11T11:00:00.000Z',
+      note: 'Sunday works better',
+    });
+    expect(awaitingResponseFrom(changed, match.userIds)).toBe(SEED_VIEWER_ID);
+  });
+
+  it('editing a plan resets it to proposed; deleting removes the plan and its chat card', async () => {
+    const { match } = (await s.matches.list(SEED_VIEWER_ID))[0]!;
+    const other = match.userIds.find((id) => id !== SEED_VIEWER_ID)!;
+    const { plan } = await s.chat.proposeDate({
+      matchId: match.id,
+      proposerId: SEED_VIEWER_ID,
+      kind: 'beach',
+      startsAt: '2026-10-10T17:00:00.000Z',
+    });
+    await s.chat.respondToDatePlan(plan.id, 'accepted', { responderId: other });
+
+    const edited = await s.chat.updateDatePlan(plan.id, SEED_VIEWER_ID, {
+      kind: 'custom',
+      customLabel: 'Puppy yoga',
+      location: '5 Pine St',
+      startsAt: '2026-10-12T11:00:00.000Z',
+    });
+    expect(edited).toMatchObject({
+      kind: 'custom',
+      customLabel: 'Puppy yoga',
+      location: '5 Pine St',
+      status: 'proposed',
+      proposerId: SEED_VIEWER_ID,
+    });
+    expect(edited.respondedById).toBeUndefined();
+    await expect(
+      s.chat.updateDatePlan(plan.id, other, { kind: 'beach', startsAt: edited.startsAt }),
+    ).rejects.toThrow();
+
+    await expect(s.chat.deleteDatePlan(plan.id, other)).rejects.toThrow();
+    await s.chat.deleteDatePlan(plan.id, SEED_VIEWER_ID);
+    expect(await s.chat.getDatePlan(plan.id)).toBeNull();
+    expect((await s.chat.listMessages(match.id)).some((m) => m.datePlanId === plan.id)).toBe(false);
   });
 
   it('unmatch removes the match and its messages; block does too', async () => {
@@ -233,6 +296,26 @@ describe('matches and chat', () => {
     expect((await s.matches.list(SEED_VIEWER_ID)).map((m) => m.match.id)).not.toContain(
       second!.match.id,
     );
+  });
+});
+
+describe('like back', () => {
+  it('matches without spending a daily like and clears the like from Likes You', async () => {
+    const [like] = await s.likes.listIncoming(SEED_VIEWER_ID);
+    const before = await s.likes.getQuota(SEED_VIEWER_ID);
+    const match = await s.likes.likeBack(like!.id, SEED_VIEWER_ID);
+    expect(match.userIds).toEqual(expect.arrayContaining([SEED_VIEWER_ID, like!.fromUserId]));
+    expect((await s.likes.getQuota(SEED_VIEWER_ID)).likesRemaining).toBe(before.likesRemaining);
+    expect((await s.likes.listIncoming(SEED_VIEWER_ID)).map((l) => l.id)).not.toContain(like!.id);
+    expect((await s.matches.list(SEED_VIEWER_ID)).map((m) => m.match.id)).toContain(match.id);
+  });
+
+  it('is idempotent and refuses removed likes', async () => {
+    const [first, second] = await s.likes.listIncoming(SEED_VIEWER_ID);
+    const a = await s.likes.likeBack(first!.id, SEED_VIEWER_ID);
+    expect((await s.likes.likeBack(first!.id, SEED_VIEWER_ID)).id).toBe(a.id);
+    await s.likes.remove(second!.id);
+    await expect(s.likes.likeBack(second!.id, SEED_VIEWER_ID)).rejects.toThrow();
   });
 });
 

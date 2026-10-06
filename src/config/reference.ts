@@ -1,4 +1,4 @@
-import type { DogSize, EnergyLevel, PupDateKind, RelationshipGoal, Species } from '@/domain/types';
+import type { DogSize, EnergyLevel, PlayDateKind, RelationshipGoal, Species } from '@/domain/types';
 
 export const SPECIES: readonly Species[] = ['dog', 'cat', 'rabbit', 'bird', 'other'];
 
@@ -63,12 +63,11 @@ export const RELATIONSHIP_GOAL_LABELS: Record<RelationshipGoal, string> = {
   not_sure: 'Still figuring it out',
 };
 
-export const PUP_DATE_LABELS: Record<PupDateKind, string> = {
+export const PLAY_DATE_LABELS: Record<PlayDateKind, string> = {
   dog_park: 'Dog park',
-  patio_cafe: 'Patio café',
+  pet_friendly_cafe: 'Pet-friendly café',
   hiking_trail: 'Hiking trail',
   beach: 'Beach',
-  pet_store: 'Pet store',
   custom: 'Something else',
 };
 

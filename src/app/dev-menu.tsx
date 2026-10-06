@@ -74,6 +74,16 @@ export default function DevMenuScreen() {
           onPress={() => run.mutate(() => dev.simulateIncomingMessage())}
         />
         <Button
+          label="Incoming Play Date plan"
+          variant="secondary"
+          onPress={() => run.mutate(() => dev.simulateIncomingDatePlan())}
+        />
+        <Button
+          label="They accept my Play Date"
+          variant="secondary"
+          onPress={() => run.mutate(() => dev.simulateDateReply())}
+        />
+        <Button
           label="Reset all data"
           variant="danger"
           onPress={() => run.mutate(async () => (await dev.reset(), 'Data reset to seed.'))}

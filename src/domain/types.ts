@@ -68,7 +68,6 @@ export interface AnimalLoverProfile {
 
 export interface Basics {
   job?: string;
-  school?: string;
   hometown?: string;
 }
 
@@ -151,15 +150,7 @@ export interface Match {
   createdAt: ISODate;
 }
 
-export type PupDateKind =
-  'dog_park' | 'patio_cafe' | 'hiking_trail' | 'beach' | 'pet_store' | 'custom';
-
-export interface Venue {
-  id: ID;
-  name: string;
-  address: string;
-  kind: PupDateKind;
-}
+export type PlayDateKind = 'dog_park' | 'pet_friendly_cafe' | 'hiking_trail' | 'beach' | 'custom';
 
 export type DatePlanStatus = 'proposed' | 'accepted' | 'declined' | 'change_suggested';
 
@@ -167,12 +158,15 @@ export interface DatePlan {
   id: ID;
   matchId: ID;
   proposerId: ID;
-  kind: PupDateKind;
+  kind: PlayDateKind;
   customLabel?: string;
-  venue?: Venue;
+  /** Free text: a place name or address the proposer typed. */
+  location?: string;
   startsAt: ISODate;
   status: DatePlanStatus;
   note?: string;
+  /** Who last answered the plan (accepted, declined or suggested a change). */
+  respondedById?: ID;
   createdAt: ISODate;
 }
 

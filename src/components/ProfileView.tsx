@@ -62,6 +62,7 @@ export function ProfileView({
     heroPets.length > 0 ? { icon: 'paw', text: summarizePets(heroPets) } : null,
     user.basics.job ? { icon: 'briefcase', text: user.basics.job } : null,
     user.location.city ? { icon: 'pin', text: user.location.city } : null,
+    user.basics.hometown ? { icon: 'home', text: `From ${user.basics.hometown}` } : null,
     user.relationshipGoals.length > 0
       ? {
           icon: 'heart',

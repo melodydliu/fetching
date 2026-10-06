@@ -11,6 +11,10 @@ export const queryKeys = {
   incomingLikes: (userId: ID) => ['likes', 'incoming', userId] as const,
   quota: (userId: ID) => ['likes', 'quota', userId] as const,
   matches: (userId: ID) => ['matches', userId] as const,
+  match: (matchId: ID) => ['match', matchId] as const,
+  messages: (matchId: ID) => ['messages', matchId] as const,
+  datePlan: (planId: ID) => ['datePlan', planId] as const,
+  otherProfile: (userId: ID) => ['profile', 'other', userId] as const,
 };
 
 export function useSession() {
@@ -86,5 +90,46 @@ export function useMatches() {
     queryKey: [...queryKeys.matches(viewerId ?? ''), forceEmpty],
     enabled: !!viewerId,
     queryFn: async () => (forceEmpty ? [] : matches.list(viewerId!)),
+  });
+}
+
+/** Anyone's profile (user + pets), e.g. from Likes You or a chat header. */
+export function useProfile(userId: ID | undefined) {
+  const { users, pets } = useServices();
+  return useQuery({
+    queryKey: queryKeys.otherProfile(userId ?? ''),
+    enabled: !!userId,
+    queryFn: async (): Promise<Profile> => {
+      const user = await users.getById(userId!);
+      if (!user) throw new Error('Profile not found');
+      return { user, pets: await pets.listByOwner(user.id) };
+    },
+  });
+}
+
+export function useMatch(matchId: ID | undefined) {
+  const { matches } = useServices();
+  return useQuery({
+    queryKey: queryKeys.match(matchId ?? ''),
+    enabled: !!matchId,
+    queryFn: () => matches.get(matchId!),
+  });
+}
+
+export function useMessages(matchId: ID | undefined) {
+  const { chat } = useServices();
+  return useQuery({
+    queryKey: queryKeys.messages(matchId ?? ''),
+    enabled: !!matchId,
+    queryFn: () => chat.listMessages(matchId!),
+  });
+}
+
+export function useDatePlan(planId: ID | undefined) {
+  const { chat } = useServices();
+  return useQuery({
+    queryKey: queryKeys.datePlan(planId ?? ''),
+    enabled: !!planId,
+    queryFn: () => chat.getDatePlan(planId!),
   });
 }

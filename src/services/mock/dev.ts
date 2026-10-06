@@ -1,5 +1,5 @@
 import { promptById } from '@/config/prompts';
-import type { Like, Match, Message } from '@/domain/types';
+import type { DatePlan, Like, Match, Message } from '@/domain/types';
 import type { DevTools } from '../types';
 import { MockDb, simulate } from './db';
 
@@ -107,6 +107,52 @@ export function createMockDevTools(db: MockDb): DevTools {
         };
         db.addMessage(message);
         return `${db.requireUser(senderId).firstName} sent you a message.`;
+      }),
+    simulateIncomingDatePlan: () =>
+      simulate(() => {
+        const me = activeId();
+        const match = pickRandom(db.matches.filter((m) => m.userIds.includes(me)));
+        if (!match) return 'No matches yet. Simulate a new match first.';
+        const senderId = match.userIds.find((id) => id !== me)!;
+        const now = new Date();
+        const startsAt = new Date(now.getTime() + 3 * 86_400_000);
+        startsAt.setHours(11, 0, 0, 0);
+        const plan: DatePlan = {
+          id: db.nextId('plan'),
+          matchId: match.id,
+          proposerId: senderId,
+          kind: 'dog_park',
+          location: 'Sunny Meadow Off-Leash Park, 120 Meadow Ln',
+          startsAt: startsAt.toISOString(),
+          status: 'proposed',
+          note: 'Bring the zoomies!',
+          createdAt: now.toISOString(),
+        };
+        db.datePlans.set(plan.id, plan);
+        db.addMessage({
+          id: db.nextId('msg'),
+          matchId: match.id,
+          senderId,
+          kind: 'date_plan',
+          datePlanId: plan.id,
+          createdAt: now.toISOString(),
+        });
+        return `${db.requireUser(senderId).firstName} proposed a Play Date.`;
+      }),
+    simulateDateReply: () =>
+      simulate(() => {
+        const me = activeId();
+        const open = [...db.datePlans.values()].find(
+          (p) =>
+            p.proposerId === me &&
+            p.status === 'proposed' &&
+            db.matches.some((m) => m.id === p.matchId),
+        );
+        if (!open) return 'You have no open Play Date plans.';
+        const match = db.matches.find((m) => m.id === open.matchId)!;
+        const otherId = match.userIds.find((id) => id !== me)!;
+        db.datePlans.set(open.id, { ...open, status: 'accepted', respondedById: otherId });
+        return `${db.requireUser(otherId).firstName} accepted your Play Date.`;
       }),
   };
 }
