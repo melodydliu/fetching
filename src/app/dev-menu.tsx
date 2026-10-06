@@ -74,6 +74,11 @@ export default function DevMenuScreen() {
           onPress={() => run.mutate(() => dev.simulateIncomingMessage())}
         />
         <Button
+          label="They're typing (15s)"
+          variant="secondary"
+          onPress={() => run.mutate(() => dev.simulateTyping())}
+        />
+        <Button
           label="Incoming Play Date plan"
           variant="secondary"
           onPress={() => run.mutate(() => dev.simulateIncomingDatePlan())}

@@ -1,11 +1,11 @@
 # Fetching: status and to-do
 
 A dating app for people whose pets are family. Expo SDK 57 + React Native + TypeScript, running entirely on mock services.
-Last updated after Phase 4, the phone check and the pet-sheet restyle. 278 unit tests passing across 23 suites; typecheck and lint clean.
+Last updated after Phase 4, the phone check and the pet-sheet restyle. 282 unit tests passing across 24 suites; typecheck and lint clean.
 
 ## What's left (start here)
 All four build phases are code-complete, and you've checked the app on a phone in Expo Go ("everything looks good so far"). Decisions made: keep the Preferences model as is (an empty section = no preference; the Dealbreaker switch makes a section strict; pet filters already apply to animal lovers), keep the tinted "Meet [pet]" panel, and the pet-bubble sheet now matches that panel exactly.
-1. **Small extras (you said "soon"):** real rabbit/bird seed photos, chat typing indicator, a "like the whole profile" type, optional photos for animal lovers.
+1. **Small extras (you said "soon"):** real rabbit/bird seed photos, a "like the whole profile" type, optional photos for animal lovers.
 2. **Branding (you're handling):** app icon and splash, the app name (one constant in `src/config` plus `app.json`), commissioned illustrations.
 3. **Later (you said "soon"), per the brief:** Supabase (real auth/DB/storage/realtime: add `createSupabaseServices()` and flip `EXPO_PUBLIC_USE_MOCKS=false`), Expo push (notification settings are already stored per user), photo verification and moderation, suggested venues for Play Dates, monetization. Supabase is the suggested first step since the rest builds on it.
 4. **Keep an eye on:** whether "empty Preferences section = no preference" feels intuitive in real use; dark mode on more screens by eye.
@@ -73,7 +73,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 - [x] **Edit / delete** a Play Date you planned (Edit and Delete buttons on your own card): editing reuses the planner, sends it back to "proposed" so they confirm again; delete asks first and removes the card. Edit is only available before the date; the other person can't edit or delete (they can decline)
 - [x] Dev Menu: "Incoming Play Date plan" and "They accept my Play Date"
 - [x] Tests: date-plan rules, like back, change-suggested flow
-- [ ] Open items: try it on a device/Expo Go; no typing indicator in chat; date plans don't post a system line when answered; no push
+- [ ] Open items: try it on a device/Expo Go; date plans don't post a system line when answered; no push
 
 ## Phase 4: Preferences, settings, safety, polish (done; device check pending)
 - [x] **Preferences screen** (`app/preferences.tsx`, Profile tab → Preferences): age range steppers, distance, gender (when you're interested in more than one), looking for, show me (pet owners / animal lovers / everyone), their pets (species, dog size, energy). Draft + **Save changes**, discard prompt, "Reset to defaults". Rules in `domain/preferencesDraft.ts`
@@ -109,7 +109,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 - [x] Device pass (web build in a phone-width frame; native-only things like haptics and GPS still need Expo Go): fixed floating Skip/Like pair landing at the bottom of the page on web, seeded likes pointing at the *sender's* prompts (Likes You said "Liked your prompt"), missing chevron on rows with chips, and confirmation dialogs (Alert does nothing on web: use `utils/confirm.ts`)
 - [x] Chat day separators (Today / Yesterday / date)
 - [x] Likes You is now a 2-column photo grid (`components/likes/LikeCard.tsx`), so it no longer looks like the Matches list
-- [ ] Chat typing indicator (not planned for MVP)
+- [x] Chat typing indicator: three bouncing dots under the newest message (`TypingIndicator`); `chat.setTyping`/`subscribeTyping`; Dev Menu → "They're typing (15s)"
 - [ ] Rabbit/bird pets use a plain placeholder tile (no sharp photo source found)
 - [ ] Seed photos load from pravatar.cc, dog.ceo and thecatapi.com (needs network; swap for bundled images if that becomes a problem)
 - [x] React Native Testing Library component tests started: `DatePlanCard`, Likes You and Matches screens (`src/test/render.tsx` gives a mock-services render helper; Reanimated is mocked in `jest.setup.ts`). More screens still to cover
@@ -132,7 +132,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 ```bash
 npm install
 npm start            # scan the QR with Expo Go (use `npx expo start --tunnel` if your Wi-Fi blocks it)
-npm test             # 278 tests
+npm test             # 282 tests
 npm run typecheck && npm run lint
 ```
 Architecture and conventions live in `CLAUDE.md`.

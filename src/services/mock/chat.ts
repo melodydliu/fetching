@@ -34,6 +34,13 @@ export function createMockChat(db: MockDb): ChatRepository {
       db.subscribe((message) => {
         if (message.matchId === matchId) onMessage(JSON.parse(JSON.stringify(message)) as Message);
       }),
+    setTyping: async (matchId, userId, typing) => db.setTyping(matchId, userId, typing),
+    subscribeTyping: (matchId, onTyping) => {
+      db.typing.get(matchId)?.forEach((userId) => onTyping(userId, true));
+      return db.subscribeTyping((id, userId, typing) => {
+        if (id === matchId) onTyping(userId, typing);
+      });
+    },
     proposeDate: (input) =>
       simulate(() => {
         const now = new Date().toISOString();

@@ -19,7 +19,10 @@ const COMMENTS = [
   undefined,
 ];
 
+const TYPING_MS = 15_000;
+
 export function createMockDevTools(db: MockDb): DevTools {
+  let typingTimer: ReturnType<typeof setTimeout> | undefined;
   const activeId = () => {
     if (!db.sessionUserId) throw new Error('No active user');
     return db.sessionUserId;
@@ -45,6 +48,7 @@ export function createMockDevTools(db: MockDb): DevTools {
       }),
     reset: () =>
       simulate(() => {
+        clearTimeout(typingTimer);
         db.reset();
       }),
     setQuota: (quota) =>
@@ -109,6 +113,22 @@ export function createMockDevTools(db: MockDb): DevTools {
         };
         db.addMessage(message);
         return `${db.requireUser(senderId).firstName} sent you a message.`;
+      }),
+    simulateTyping: () =>
+      simulate(() => {
+        const me = activeId();
+        // Most recent activity: last message, or the match itself if nobody has spoken yet.
+        const activity = (m: Match) =>
+          db.messages.filter((x) => x.matchId === m.id).at(-1)?.createdAt ?? m.createdAt;
+        const match = db.matches
+          .filter((m) => m.userIds.includes(me))
+          .sort((a, b) => activity(b).localeCompare(activity(a)))[0];
+        if (!match) return 'No matches yet. Simulate a new match first.';
+        const otherId = match.userIds.find((id) => id !== me)!;
+        db.setTyping(match.id, otherId, true);
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => db.setTyping(match.id, otherId, false), TYPING_MS);
+        return `${db.requireUser(otherId).firstName} is typing for 15s. Open their chat.`;
       }),
     simulateIncomingDatePlan: () =>
       simulate(() => {

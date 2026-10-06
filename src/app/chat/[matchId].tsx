@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DatePlanCard } from '@/components/chat/DatePlanCard';
 import { DateTimePicker } from '@/components/chat/DateTimePicker';
 import { MessageBubble } from '@/components/chat/MessageBubble';
+import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { SafetySheet } from '@/components/safety/SafetySheet';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
@@ -43,6 +44,12 @@ import { hitSize } from '@/theme';
 import { confirmAction } from '@/utils/confirm';
 
 const MAX_MESSAGE = 1000;
+/** Re-send "typing" at most this often while the draft keeps changing. */
+const TYPING_REFRESH_MS = 3000;
+/** Stop saying we're typing after this long without a keystroke. */
+const TYPING_IDLE_MS = 4000;
+/** If a "stopped typing" never arrives, hide their indicator after this long. */
+const TYPING_EXPIRE_MS = 8000;
 
 const timeOf = (iso: string) =>
   new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
@@ -214,6 +221,7 @@ export default function ChatScreen() {
   const [draft, setDraft] = useState('');
   const [suggesting, setSuggesting] = useState<DatePlan | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
+  const [otherTyping, setOtherTyping] = useState(false);
 
   // Mocked realtime: new messages (from the Dev Menu or the other person) land here.
   useEffect(() => {
@@ -222,10 +230,54 @@ export default function ChatScreen() {
       queryClient.setQueryData<Message[]>(queryKeys.messages(matchId), (prev) =>
         prev?.some((m) => m.id === message.id) ? prev : [...(prev ?? []), message],
       );
-      if (message.senderId !== viewerId) void Haptics.selectionAsync();
+      if (message.senderId !== viewerId) {
+        setOtherTyping(false);
+        void Haptics.selectionAsync();
+      }
       void queryClient.invalidateQueries({ queryKey: ['matches'] });
     });
   }, [matchId, viewerId, chat, queryClient]);
+
+  // Their typing indicator, with a safety expiry in case "stopped" never arrives.
+  useEffect(() => {
+    if (!matchId || !otherId) return undefined;
+    let expire: ReturnType<typeof setTimeout> | undefined;
+    const off = chat.subscribeTyping(matchId, (userId, typing) => {
+      if (userId !== otherId) return;
+      clearTimeout(expire);
+      setOtherTyping(typing);
+      if (typing) expire = setTimeout(() => setOtherTyping(false), TYPING_EXPIRE_MS);
+    });
+    return () => {
+      off();
+      clearTimeout(expire);
+      setOtherTyping(false);
+    };
+  }, [matchId, otherId, chat]);
+
+  // Our typing, sent best effort: refreshed while typing, cleared when idle, sent or left.
+  const lastTypingSent = useRef(0);
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const stopTyping = () => {
+    clearTimeout(idleTimer.current);
+    if (lastTypingSent.current && matchId && viewerId) {
+      lastTypingSent.current = 0;
+      void chat.setTyping(matchId, viewerId, false).catch(() => undefined);
+    }
+  };
+  const onDraftChange = (text: string) => {
+    setDraft(text);
+    if (!matchId || !viewerId) return;
+    if (!text.trim()) return stopTyping();
+    const now = Date.now();
+    if (now - lastTypingSent.current > TYPING_REFRESH_MS) {
+      lastTypingSent.current = now;
+      void chat.setTyping(matchId, viewerId, true).catch(() => undefined);
+    }
+    clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(stopTyping, TYPING_IDLE_MS);
+  };
+  useEffect(() => stopTyping, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Having the chat open means everything in it is read.
   const messageCount = messages.data?.length ?? 0;
@@ -255,6 +307,7 @@ export default function ChatScreen() {
     const text = draft.trim();
     if (!text || !viewerId) return;
     setDraft('');
+    stopTyping();
     send.mutate(text);
   };
 
@@ -362,6 +415,8 @@ export default function ChatScreen() {
               data.length === 0 && { flexGrow: 1, justifyContent: 'center' },
             ]}
             keyboardShouldPersistTaps="handled"
+            // Inverted list: the header renders at the bottom, below the newest message.
+            ListHeaderComponent={otherTyping ? <TypingIndicator name={name} /> : null}
             ListEmptyComponent={
               <View style={[styles.empty, { gap: spacing.sm }]}>
                 <Text variant="heading" align="center">
@@ -420,7 +475,7 @@ export default function ChatScreen() {
             </Pressable>
             <TextInput
               value={draft}
-              onChangeText={setDraft}
+              onChangeText={onDraftChange}
               placeholder="Message"
               placeholderTextColor={colors.textSubtle}
               accessibilityLabel="Message"

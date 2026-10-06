@@ -58,6 +58,7 @@ export function credentialKey(c: { phone: string } | { email: string }): string 
 }
 
 type MessageListener = (message: Message) => void;
+type TypingListener = (matchId: ID, userId: ID, typing: boolean) => void;
 
 /** In-memory "backend". One instance backs every mock service. */
 export class MockDb {
@@ -76,7 +77,10 @@ export class MockDb {
   /** Dev Menu override of today's remaining likes / Treat. */
   quotaOverride: { likes?: number; treatAvailable?: boolean } = {};
   sessionUserId: ID | null = null;
+  /** Match id -> users who are typing right now. */
+  typing = new Map<ID, Set<ID>>();
   private listeners = new Set<MessageListener>();
+  private typingListeners = new Set<TypingListener>();
   private counter = 0;
 
   constructor() {
@@ -89,6 +93,7 @@ export class MockDb {
   }
 
   reset(): void {
+    this.clearTyping();
     const { users, pets } = buildSeed(new Date());
     this.users = new Map(users.map((u) => [u.id, u]));
     this.pets = new Map(pets.map((p) => [p.id, p]));
@@ -178,6 +183,27 @@ export class MockDb {
   addMessage(message: Message): void {
     this.messages.push(message);
     this.listeners.forEach((l) => l(message));
+  }
+
+  setTyping(matchId: ID, userId: ID, typing: boolean): void {
+    const users = this.typing.get(matchId) ?? new Set<ID>();
+    if (users.has(userId) === typing) return;
+    if (typing) users.add(userId);
+    else users.delete(userId);
+    this.typing.set(matchId, users);
+    this.typingListeners.forEach((l) => l(matchId, userId, typing));
+  }
+
+  /** Clears everyone's typing state (on reset), telling listeners. */
+  clearTyping(): void {
+    [...this.typing].forEach(([matchId, users]) =>
+      [...users].forEach((userId) => this.setTyping(matchId, userId, false)),
+    );
+  }
+
+  subscribeTyping(listener: TypingListener): () => void {
+    this.typingListeners.add(listener);
+    return () => this.typingListeners.delete(listener);
   }
 
   subscribe(listener: MessageListener): () => void {

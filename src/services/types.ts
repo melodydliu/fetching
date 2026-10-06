@@ -176,6 +176,10 @@ export interface ChatRepository {
   markRead(matchId: ID, readerId: ID): Promise<void>;
   /** Mocked realtime. Real implementation will use Supabase Realtime. */
   subscribe(matchId: ID, onMessage: (message: Message) => void): Unsubscribe;
+  /** Tell the other person you started or stopped typing. Best effort: failures are ignored. */
+  setTyping(matchId: ID, userId: ID, typing: boolean): Promise<void>;
+  /** Fires when the other person starts/stops typing. Also fires once with the current state. */
+  subscribeTyping(matchId: ID, onTyping: (userId: ID, typing: boolean) => void): Unsubscribe;
   proposeDate(input: ProposeDateInput): Promise<{ plan: DatePlan; message: Message }>;
   getDatePlan(planId: ID): Promise<DatePlan | null>;
   /** Proposer only. Replaces the details and puts the plan back to "proposed" for the other person. */
@@ -207,6 +211,8 @@ export interface DevTools {
   simulateIncomingLike(): Promise<string>;
   simulateNewMatch(): Promise<string>;
   simulateIncomingMessage(): Promise<string>;
+  /** The other person in your most recent chat "types" for ~15s (open the chat to see it). */
+  simulateTyping(): Promise<string>;
   /** The other person proposes a Play Date in a random match. */
   simulateIncomingDatePlan(): Promise<string>;
   /** The other person answers the viewer's latest open Play Date plan. */

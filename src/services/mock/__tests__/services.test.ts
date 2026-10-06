@@ -418,6 +418,56 @@ describe('dev tools', () => {
   });
 });
 
+describe('typing', () => {
+  const pair = async () => {
+    await s.dev!.simulateNewMatch();
+    const match = db.matches.at(-1)!;
+    return { match, otherId: match.userIds.find((id) => id !== SEED_VIEWER_ID)! };
+  };
+
+  it('tells subscribers when the other person starts and stops typing', async () => {
+    const { match, otherId } = await pair();
+    const seen: [string, boolean][] = [];
+    const off = s.chat.subscribeTyping(match.id, (userId, typing) => seen.push([userId, typing]));
+    await s.chat.setTyping(match.id, otherId, true);
+    await s.chat.setTyping(match.id, otherId, true); // no change, no event
+    await s.chat.setTyping(match.id, otherId, false);
+    off();
+    await s.chat.setTyping(match.id, otherId, true);
+    expect(seen).toEqual([
+      [otherId, true],
+      [otherId, false],
+    ]);
+  });
+
+  it('ignores typing in other chats and replays current state to new subscribers', async () => {
+    const { match, otherId } = await pair();
+    await s.chat.setTyping(match.id, otherId, true);
+    const seen: boolean[] = [];
+    s.chat.subscribeTyping(match.id, (_u, typing) => seen.push(typing));
+    s.chat.subscribeTyping('some-other-match', () => seen.push(false));
+    expect(seen).toEqual([true]);
+  });
+
+  it('Dev Menu typing starts in the latest chat and stops by itself, and reset clears it', async () => {
+    jest.useFakeTimers();
+    try {
+      const { match, otherId } = await pair();
+      const seen: boolean[] = [];
+      s.chat.subscribeTyping(match.id, (_u, typing) => seen.push(typing));
+      const run = s.dev!.simulateTyping();
+      await jest.advanceTimersByTimeAsync(1000);
+      await run;
+      expect(seen).toEqual([true]);
+      expect(db.typing.get(match.id)?.has(otherId)).toBe(true);
+      await jest.advanceTimersByTimeAsync(15_000);
+      expect(seen).toEqual([true, false]);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
 describe('sign up', () => {
   it('creates a bare, incomplete account and signs in as it', async () => {
     const session = await s.auth.signUp({ email: 'new@example.com' });

@@ -67,7 +67,7 @@ All in `src/domain/matching/` (pure, no UI or services). Every weight lives in `
 ## Chat & Play Date (Phase 3)
 - Routes: `user/[id]` (any profile; `?likeId=` adds the Like back / Remove bar), `chat/[matchId]`, `play-date/[matchId]` (modal), `match-moment` (full-screen modal, `?matchId=`).
 - `likes.likeBack(likeId, viewerId)` matches without spending a daily like. Mutual likes sent from Discover also go to the match moment.
-- Chat uses TanStack Query for messages; `chat.subscribe` pushes new ones into the cache (dedupe by id). Opening a chat marks it read.
+- Chat uses TanStack Query for messages; `chat.subscribe` pushes new ones into the cache (dedupe by id). Opening a chat marks it read. Typing: `chat.setTyping` (throttled, best effort, cleared on send/idle/leave) and `chat.subscribeTyping` (replays current state; the screen also auto-hides it after 8s); Dev Menu → "They're typing (15s)".
 - Date plan rules are pure (`domain/datePlans.ts`): `DatePlan.respondedById` records who last answered; a suggested change waits on the *other* person. Only the proposer can edit (future dates only; resets to `proposed`) or delete (`/play-date/[matchId]?planId=` is the edit mode of the planner). Day/time picking uses plain chips (`components/chat/DateTimePicker.tsx`), no native picker dependency.
 
 ## Pets decide the profile type
