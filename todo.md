@@ -1,15 +1,58 @@
 # Fetching: status and to-do
 
-A dating app for people whose pets are family. Expo SDK 57 + React Native + TypeScript, running entirely on mock services.
-Last updated after Phase 4, the phone check and the pet-sheet restyle. 323 unit tests passing across 31 suites (+18 live Supabase tests, skipped unless asked); typecheck and lint clean.
+A dating app for people whose pets are family. Expo SDK 57 + React Native + TypeScript. Runs on mock services by default and on a real Supabase backend (`EXPO_PUBLIC_USE_MOCKS=false`).
+Last updated after the illustrations, icon and splash, Discover top bar, photo removal and the age slider. 337 unit tests passing across 34 suites (+18 live Supabase tests, skipped unless asked); typecheck and lint clean.
 
-## What's left (start here)
-All four build phases are code-complete, and you've checked the app on a phone in Expo Go ("everything looks good so far"). Decisions made: keep the Preferences model as is (an empty section = no preference; the Dealbreaker switch makes a section strict; pet filters already apply to animal lovers), keep the tinted "Meet [pet]" panel, and the pet-bubble sheet now matches that panel exactly.
-1. **Small extras (you said "soon"):** real rabbit/bird seed photos, a "like the whole profile" type, optional photos for animal lovers.
-2. **Branding (you're handling):** the app name (one constant in `src/config` plus `app.json`).
-3. **In progress: Supabase. Every service now has a real implementation** (`src/services/supabase/`, 17 live tests, 68 local rule checks): auth (email + password), users/pets/media, discovery (server-measured distance), likes, matches, and chat (messages, read receipts, Realtime delivery with catch-up, private typing channel, Play Dates). **Seed + cleanup scripts are built** (`scripts/`, `npm run seed` / `npm run seed:clean`; plan unit-tested and loaded into the real schema by `supabase/tests/run.sh`; see README "Running on the real backend"). Next: **you run the seed, flip `EXPO_PUBLIC_USE_MOCKS=false` in `.env.local`, and do a full device pass.** Known gaps to handle then: `app/user/[id].tsx` now hides the distance when coordinates are private (0/0), so from Likes You / Matches there's no distance line (Discover has the server distance); daily limits reset at midnight UTC (mock uses local time), so the "resets at" countdown differs from mock; Play Date cards don't update live when the other person answers (they refetch on open; a `date_plans` realtime subscription would fix it). Dashboard to-do (yours): turn OFF "Allow public access" in Realtime settings (defense in depth; the live test already shows an outsider can't hear a match's typing). Before launch: custom SMTP (needs a domain) + turn "Confirm email" back on; then emailed codes / phone.
-   **Later (you said "soon"), per the brief:** Supabase (real auth/DB/storage/realtime: add `createSupabaseServices()` and flip `EXPO_PUBLIC_USE_MOCKS=false`), Expo push (notification settings are already stored per user), photo verification and moderation, suggested venues for Play Dates, monetization. Supabase is the suggested first step since the rest builds on it.
-4. **Keep an eye on:** whether "empty Preferences section = no preference" feels intuitive in real use; dark mode on more screens by eye.
+## Where things stand
+All four build phases are code-complete. The real backend is built and verified by automated tests (68 local rule checks, 18 live tests) and the app has been checked in Expo Go on mock data. **Branding is done** (custom illustrations, app icon, splash) apart from the final app name. What remains is mostly proving it on the real backend, accounts and legal, and store setup.
+
+## Before launch (in suggested order)
+**A. Prove it on the real backend (you can do this now)**
+- [ ] Seed the real database (`npm run seed -- --for you@example.com`), set `EXPO_PUBLIC_USE_MOCKS=false` in `.env.local`, and do a full device pass: sign-up, onboarding with real photo uploads, Discover, likes, matching, chat (typing, read receipts), Play Dates, block / report / unmatch, delete account.
+- [ ] Known gaps to look at during that pass: no distance line on profiles opened from Likes You / Matches (coordinates are private); Play Date cards don't update live when the other person answers (they refetch on open; a `date_plans` realtime subscription would fix it); daily limits reset at midnight UTC, mock uses local time, so the "resets at" countdown differs.
+- [ ] Look at dark mode by eye on a phone (so far checked by contrast tests only).
+- [ ] Check by eye: age slider handles are easy to grab and don't trigger swipe-back; the photo remove × is easy to spot; Discover's top strip and taller hero feel right.
+
+**B. Accounts and email (needs a domain: start early)**
+- [ ] Buy a domain; set up custom SMTP (Supabase free tier can't edit email templates without it); turn "Confirm email" back ON (it's off for development only).
+- [ ] **Forgot password / reset password** (does not exist yet; needs email sending).
+- [ ] Later: emailed codes, phone sign-in.
+
+**C. Safety and moderation**
+- [ ] A way to review reports (they go into a write-only `reports` table today) and act: remove a user, remove a photo, respond within about a day. Check the current App Store / Google Play rules for user-generated content.
+- [ ] Basic photo moderation or verification (public photos in a dating app attract abuse quickly).
+- [ ] Longer term: rate-limit location changes (rounding limits but doesn't eliminate trilateration, see the `discovery_distances` migration notes).
+
+**D. Legal**
+- [ ] Privacy policy and Terms of Service; link them from sign-up and Settings, and from the store listings.
+
+**E. Production clean-up**
+- [ ] Remove seed accounts: `npm run seed:clean -- --yes` (dry run without `--yes`).
+- [ ] Supabase dashboard: turn OFF "Allow public access" in Realtime settings (defense in depth; the live test already shows an outsider can't hear a match's typing).
+- [ ] Move to a paid Supabase plan (free projects pause when idle and have no backups); consider a separate production project.
+- [ ] Add crash reporting (e.g. Sentry); there is none today.
+
+**F. Build and store setup**
+- [ ] Apple Developer account ($99/year) and Google Play account ($25 one-time).
+- [ ] Final app name (one constant in `src/config` plus `app.json`), bundle identifier / package name, and EAS build configuration (none yet).
+- [ ] Check the icon and splash on a real build (Expo Go always shows its own icon).
+- [ ] Store listing: screenshots, description, privacy answers; TestFlight and Play internal testing with a few real people.
+
+## Strongly recommended, not strictly blocking
+- [ ] **Push notifications** (Expo push; notification settings are already stored per user, nothing sends yet).
+- [ ] Small extras: a "like the whole profile" type, optional photos for animal lovers, real rabbit/bird seed photos (seed only; goes away with the seed data).
+
+## Later (per the brief)
+- Suggested venues for Play Dates (needs real venue search, e.g. Google Places / Foursquare, near the midpoint of the two matched users: `chat.suggestVenues(kind, location)` and a `Venue` type).
+- Phone sign-in, emailed codes.
+- Monetization.
+
+## Keep an eye on
+- Whether "empty Preferences section = no preference" feels intuitive in real use.
+- The two Discover empty states share one illustration (`empty-discover-out-of-likes` and `empty-discover-no-one-nearby` are the same file); replace either to differentiate.
+
+## Decisions made
+Keep the Preferences model as is (an empty section = no preference; the Dealbreaker switch makes a section strict; pet filters apply to animal lovers). Keep the tinted "Meet [pet]" panel, and the pet-bubble sheet matches it. Pet-match scores are never shown to users (they only drive ranking). Email + password sign-in for now.
 
 ---
 
@@ -20,7 +63,7 @@ All four build phases are code-complete, and you've checked the app on a phone i
 - [x] Service interfaces for Auth, User, Pet, Discovery, Like, Match, Chat, Media, each with an in-memory mock (200–500ms latency)
 - [x] One provider selects implementations (`EXPO_PUBLIC_USE_MOCKS`)
 - [x] Strongly typed domain models (User, Pet, Prompt, Photo, Preferences, Dealbreakers, Like, Match, Message, DatePlan, Report)
-- [x] Seed data: 45 users (~75% pet owners, dogs mostly, some cats/rabbits/birds/multi-pet), within ~30 miles of a configurable center
+- [x] Seed data: 44 users (~75% pet owners, dogs mostly, some cats/rabbits/birds/multi-pet), within ~30 miles of a configurable center
 - [x] 30 prompts in a config file
 - [x] Hidden Dev Menu (long-press the version in Settings): switch user, reset data, simulate like / match / message, force empty states, daily-limit overrides
 - [x] `CLAUDE.md` and `README.md` (including Expo Go instructions)
@@ -50,7 +93,7 @@ All four build phases are code-complete, and you've checked the app on a phone i
 
 ## Profile redesign (done, after Phase 2)
 Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
-- [x] Full-bleed **hero photo** with a status-bar scrim; daily-likes / Treat chips sit on it
+- [x] Full-bleed **hero photo** (taller since the Discover top-bar change); on Discover the daily-likes / Treat chips now sit in a strip above the photo, with no scrim
 - [x] **Pet photo bubbles** (72pt, stacked, max 3 + "+N") bottom-right of the hero for pet owners; not tappable yet
 - [x] Name + age in Fraunces, then a facts grid: **pets summary** ("1 dog, 2 cats"), job, city, relationship goals, distance
 - [x] **Skip (✕) and Like (♡)** as a large floating pair (84pt buttons) above the tab bar, always visible; the hero Like opens the like sheet for the hero photo
@@ -77,14 +120,14 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 - [ ] Open items: try it on a device/Expo Go; date plans don't post a system line when answered; no push
 
 ## Phase 4: Preferences, settings, safety, polish (done; device check pending)
-- [x] **Preferences screen** (`app/preferences.tsx`, Profile tab → Preferences): age range steppers, distance, gender (when you're interested in more than one), looking for, show me (pet owners / animal lovers / everyone), their pets (species, dog size, energy). Draft + **Save changes**, discard prompt, "Reset to defaults". Rules in `domain/preferencesDraft.ts`
+- [x] **Preferences screen** (`app/preferences.tsx`, Profile tab → Preferences): age range slider (two handles), distance, gender (when you're interested in more than one), looking for, show me (pet owners / animal lovers / everyone), their pets (species, dog size, energy). Draft + **Save changes**, discard prompt, "Reset to defaults". Rules in `domain/preferencesDraft.ts`
 - [x] **Dealbreaker toggles** under every preference except age and distance (those always apply, both ways); a toggle is disabled until something is picked and is switched off automatically if you clear the selection
 - [x] **My pet isn't good with dogs/cats** (pet owners) and **I'm allergic to** + "hide people who have these animals" (everyone). Allergies moved here from Edit profile
 - [x] Changing "Interested in" in Edit profile also resets the Gender preference so they never disagree (`profileUpdateFor`)
 - [x] **Unmatch, block and report** (`components/safety/SafetySheet.tsx`): the ⋯ button in the chat header, on the hero of any profile (Discover, Likes You, a match's profile). Report asks for a reason (+ optional details, + "also block"). Blocking removes the match and chat; blocked people drop out of Discover/Likes You. Settings → **Blocked people** lists and undoes blocks
 - [x] Settings: **Account** screen (masked sign-in, member since), **notification preferences now persist** (matches, messages, likes, Play Dates), pause / log out / delete (confirm) as before
 - [x] Empty/error-state audit: every screen that loads data now has loading + error (and empty where it lists); Preview, Pet editor and Onboarding gained error states. The Pet editor also asks before discarding unsaved changes
-- [x] Accessibility: contrast of every text/background token pair is unit-tested in light **and** dark (≥ 4.5:1); steppers expose increment/decrement to screen readers; tap targets re-audited (small icon buttons use hitSlop to reach 48pt); skeletons and animations respect reduce-motion
+- [x] Accessibility: contrast of every text/background token pair is unit-tested in light **and** dark (≥ 4.5:1); the age slider's handles expose increment/decrement to screen readers; tap targets re-audited (small icon buttons use hitSlop to reach 48pt); skeletons and animations respect reduce-motion
 - [x] Haptics on match (success haptic on the match moment, and when you like back / mutual like)
 - [ ] Dark mode has been checked by contrast tests only, not by eye on a device
 - [ ] Notification settings are stored but nothing sends push yet (Later)
@@ -117,8 +160,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 - [x] Custom app icon and splash in place (check them on a real build; Expo Go shows its own icon)
 - [ ] Unconfirmed: the URL briefly showed `/dev-menu` right after sign-up on the web target; watch for a flash on device
 - [ ] Two web-only React warnings about native accessibility props from library internals (harmless on iOS/Android)
-- [x] Custom illustrations in place (11 PNGs in `assets/illustrations/`); the two Discover empty states currently share one image
-- [ ] App name is a placeholder ("Fetching"): one constant in `src/config` plus `app.json`
+- [x] Custom illustrations in place (11 PNGs in `assets/illustrations/`, shown through `components/illustrations/Illustration.tsx`); empty states centre the picture and copy with the button pinned to the bottom
 
 ## Later (explicitly not now, per the brief)
 - Supabase: auth, Postgres, storage, realtime chat (add real service implementations, flip `EXPO_PUBLIC_USE_MOCKS=false`)
@@ -133,7 +175,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 ```bash
 npm install
 npm start            # scan the QR with Expo Go (use `npx expo start --tunnel` if your Wi-Fi blocks it)
-npm test             # 323 tests
+npm test             # 337 tests
 npm run typecheck && npm run lint
 ```
 Architecture and conventions live in `CLAUDE.md`.
