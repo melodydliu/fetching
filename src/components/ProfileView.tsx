@@ -104,29 +104,9 @@ export function ProfileView({
     </View>
   );
 
-  const promptCard = (block: Extract<ProfileBlock, { type: 'prompt' }>) => {
-    const prompt = promptById(block.answer.promptId);
-    return (
-      <View
-        style={[
-          styles.card,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderRadius: radii.xl,
-            padding: spacing.xl,
-            paddingBottom: onLikePress ? spacing.xl + 40 : spacing.xl,
-            gap: spacing.sm,
-          },
-        ]}
-      >
-        <Text variant="smallStrong" color="textMuted">
-          {prompt?.text}
-        </Text>
-        <Text variant="titleItalic">{block.answer.answer}</Text>
-      </View>
-    );
-  };
+  const promptCard = (block: Extract<ProfileBlock, { type: 'prompt' }>) => (
+    <PromptCard answer={block.answer} roomForLike={!!onLikePress} />
+  );
 
   const renderPersonBlock = (block: ProfileBlock) => {
     if (block.type === 'photo') {
@@ -174,14 +154,7 @@ export function ProfileView({
           gap: spacing.md,
         }}
       >
-        <View
-          style={[styles.sectionHeader, { paddingHorizontal: spacing.sm, paddingTop: spacing.xs }]}
-        >
-          <Icon name="paw" size={22} color={colors.onPrimarySoft} />
-          <Text variant="title" color="onPrimarySoft" style={{ flex: 1 }}>
-            {section.title}
-          </Text>
-        </View>
+        <PanelHeader title={section.title} />
         {section.blocks.map((block) => {
           if (block.type === 'pet') {
             return (
@@ -373,7 +346,48 @@ function PetBubbles({ pets, onPress }: { pets: Pet[]; onPress: (pet: Pet) => voi
   );
 }
 
-/** A pet's full card in a sheet, opened from the hero's pet bubbles. */
+/** "Meet [pet]" heading with the paw, shared by the profile's pet panel and the pet sheet. */
+function PanelHeader({ title }: { title: string }) {
+  const { colors, spacing } = useTheme();
+  return (
+    <View style={[styles.sectionHeader, { paddingHorizontal: spacing.sm, paddingTop: spacing.xs }]}>
+      <Icon name="paw" size={22} color={colors.onPrimarySoft} />
+      <Text variant="title" color="onPrimarySoft" style={{ flex: 1 }}>
+        {title}
+      </Text>
+    </View>
+  );
+}
+
+/** A prompt and its answer on a white card. */
+function PromptCard({ answer, roomForLike }: { answer: PromptAnswer; roomForLike?: boolean }) {
+  const { colors, radii, spacing } = useTheme();
+  return (
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          borderRadius: radii.xl,
+          padding: spacing.xl,
+          paddingBottom: roomForLike ? spacing.xl + 40 : spacing.xl,
+          gap: spacing.sm,
+        },
+      ]}
+    >
+      <Text variant="smallStrong" color="textMuted">
+        {promptById(answer.promptId)?.text}
+      </Text>
+      <Text variant="titleItalic">{answer.answer}</Text>
+    </View>
+  );
+}
+
+/**
+ * Opened from the hero's pet bubbles: the same "Meet [pet]" panel as on the profile (tinted
+ * background, heading, pet card, then the pet prompts), just one pet at a time.
+ */
 function PetSheet({
   pet,
   prompts,
@@ -398,52 +412,38 @@ function PetSheet({
         <View
           style={{
             maxHeight: windowHeight * 0.88,
-            backgroundColor: colors.background,
-            borderTopLeftRadius: radii.xl,
-            borderTopRightRadius: radii.xl,
-            paddingTop: spacing.md,
+            backgroundColor: colors.primarySoft,
+            borderTopLeftRadius: radii.xl + 8,
+            borderTopRightRadius: radii.xl + 8,
           }}
         >
-          <View style={styles.sheetHeader}>
-            <Pressable
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              style={styles.sheetClose}
-            >
-              <Icon name="x" size={24} color={colors.text} />
-            </Pressable>
-          </View>
           <ScrollView
             contentContainerStyle={{
-              paddingHorizontal: spacing.lg,
+              padding: spacing.md,
               paddingBottom: insets.bottom + spacing.lg,
+              gap: spacing.md,
             }}
           >
             {pet ? (
-              <View style={{ gap: spacing.md }}>
+              <>
+                <View style={styles.sheetTitleRow}>
+                  <View style={{ flex: 1 }}>
+                    <PanelHeader title={`Meet ${pet.name}`} />
+                  </View>
+                  <Pressable
+                    onPress={onClose}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close"
+                    style={styles.sheetClose}
+                  >
+                    <Icon name="x" size={24} color={colors.onPrimarySoft} />
+                  </Pressable>
+                </View>
                 <PetCard pet={pet} likeButton={null} />
                 {prompts.map((answer) => (
-                  <View
-                    key={answer.id}
-                    style={[
-                      styles.card,
-                      {
-                        backgroundColor: colors.surface,
-                        borderColor: colors.border,
-                        borderRadius: radii.xl,
-                        padding: spacing.xl,
-                        gap: spacing.sm,
-                      },
-                    ]}
-                  >
-                    <Text variant="smallStrong" color="textMuted">
-                      {promptById(answer.promptId)?.text}
-                    </Text>
-                    <Text variant="titleItalic">{answer.answer}</Text>
-                  </View>
+                  <PromptCard key={answer.id} answer={answer} />
                 ))}
-              </View>
+              </>
             ) : null}
           </ScrollView>
         </View>
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   sheetBackdrop: { flex: 1, justifyContent: 'flex-end' },
-  sheetHeader: { alignItems: 'flex-end', paddingHorizontal: 12 },
+  sheetTitleRow: { flexDirection: 'row', alignItems: 'center' },
   sheetClose: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   caption: { position: 'absolute', paddingHorizontal: 12, paddingVertical: 8 },
   photoCaption: { left: 12, bottom: 12, right: 12 + 48 + 12 },

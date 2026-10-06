@@ -1,18 +1,14 @@
 # Fetching: status and to-do
 
 A dating app for people whose pets are family. Expo SDK 57 + React Native + TypeScript, running entirely on mock services.
-Last updated after **Phase 4** and the follow-up polish (pushed to `main`, commit `87c470e`). 278 unit tests passing across 23 suites; typecheck and lint clean.
+Last updated after Phase 4, the phone check and the pet-sheet restyle. 278 unit tests passing across 23 suites; typecheck and lint clean.
 
 ## What's left (start here)
-All four build phases are code-complete. What remains:
-1. **Real-device pass in Expo Go** (only the web build has been clicked through so far): haptics, the GPS "Use my current location" prompt, photo picking and drag-reorder, keyboard behaviour in chat, and **dark mode by eye**.
-2. **Open product decision, paused by you:** make every Preferences section a multi-select where unselected options are hidden and selecting none shows nobody. Two questions were left open: (a) what happens to the Dealbreaker switches if everything becomes a hard filter, and (b) whether pet filters (species, size, energy) apply to animal lovers, who have no pets. Nothing was changed.
-3. **Design task:** rework how pets are viewed on a profile (the tinted "Meet [pet]" panel is a stopgap; pet bubbles now open a sheet).
-4. **Branding (you're handling at the end):** app icon and splash, the app name (one constant in `src/config` plus `app.json`), commissioned illustrations.
-5. **Small leftovers:** seed photos for rabbits/birds, Likes You as a grid, chat typing indicator, a "whole profile" like type, optional photos for animal lovers (all optional for MVP; details below).
-6. **Later (not now, per the brief):** Supabase (real auth/DB/storage/realtime), Expo push (notification settings are already stored), photo verification and moderation, suggested venues for Play Dates, monetization.
-
-Legend: `[x]` done · `[ ]` to do · `[~]` partly done
+All four build phases are code-complete, and you've checked the app on a phone in Expo Go ("everything looks good so far"). Decisions made: keep the Preferences model as is (an empty section = no preference; the Dealbreaker switch makes a section strict; pet filters already apply to animal lovers), keep the tinted "Meet [pet]" panel, and the pet-bubble sheet now matches that panel exactly.
+1. **Small extras (you said "soon"):** real rabbit/bird seed photos, Likes You as a grid, chat typing indicator, a "like the whole profile" type, optional photos for animal lovers.
+2. **Branding (you're handling):** app icon and splash, the app name (one constant in `src/config` plus `app.json`), commissioned illustrations.
+3. **Later (you said "soon"), per the brief:** Supabase (real auth/DB/storage/realtime: add `createSupabaseServices()` and flip `EXPO_PUBLIC_USE_MOCKS=false`), Expo push (notification settings are already stored per user), photo verification and moderation, suggested venues for Play Dates, monetization. Supabase is the suggested first step since the rest builds on it.
+4. **Keep an eye on:** whether "empty Preferences section = no preference" feels intuitive in real use; dark mode on more screens by eye.
 
 ---
 
