@@ -226,16 +226,21 @@ export default function ChatScreen() {
   // Mocked realtime: new messages (from the Dev Menu or the other person) land here.
   useEffect(() => {
     if (!matchId) return undefined;
-    return chat.subscribe(matchId, (message) => {
-      queryClient.setQueryData<Message[]>(queryKeys.messages(matchId), (prev) =>
-        prev?.some((m) => m.id === message.id) ? prev : [...(prev ?? []), message],
-      );
-      if (message.senderId !== viewerId) {
-        setOtherTyping(false);
-        void Haptics.selectionAsync();
-      }
-      void queryClient.invalidateQueries({ queryKey: ['matches'] });
-    });
+    return chat.subscribe(
+      matchId,
+      (message) => {
+        queryClient.setQueryData<Message[]>(queryKeys.messages(matchId), (prev) =>
+          prev?.some((m) => m.id === message.id) ? prev : [...(prev ?? []), message],
+        );
+        if (message.senderId !== viewerId) {
+          setOtherTyping(false);
+          void Haptics.selectionAsync();
+        }
+        void queryClient.invalidateQueries({ queryKey: ['matches'] });
+      },
+      // Live now: refetch so anything sent while we were connecting isn't missed.
+      () => void queryClient.invalidateQueries({ queryKey: queryKeys.messages(matchId) }),
+    );
   }, [matchId, viewerId, chat, queryClient]);
 
   // Their typing indicator, with a safety expiry in case "stopped" never arrives.

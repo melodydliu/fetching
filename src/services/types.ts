@@ -179,10 +179,17 @@ export interface ChatRepository {
   sendText(matchId: ID, senderId: ID, text: string): Promise<Message>;
   markRead(matchId: ID, readerId: ID): Promise<void>;
   /** Mocked realtime. Real implementation will use Supabase Realtime. */
-  subscribe(matchId: ID, onMessage: (message: Message) => void): Unsubscribe;
+  /**
+   * `onReady` fires once the subscription is live (real backend). Anything sent before that was
+   * missed, so callers should refetch then to catch up.
+   */
+  subscribe(matchId: ID, onMessage: (message: Message) => void, onReady?: () => void): Unsubscribe;
   /** Tell the other person you started or stopped typing. Best effort: failures are ignored. */
   setTyping(matchId: ID, userId: ID, typing: boolean): Promise<void>;
-  /** Fires when the other person starts/stops typing. Also fires once with the current state. */
+  /**
+   * Fires when the other person starts/stops typing. The mock also replays the current state
+   * on subscribe; the real backend (ephemeral broadcast) can't, so callers must not rely on it.
+   */
   subscribeTyping(matchId: ID, onTyping: (userId: ID, typing: boolean) => void): Unsubscribe;
   proposeDate(input: ProposeDateInput): Promise<{ plan: DatePlan; message: Message }>;
   getDatePlan(planId: ID): Promise<DatePlan | null>;

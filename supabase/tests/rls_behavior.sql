@@ -246,3 +246,48 @@ begin
   perform testh.as_admin();
   raise notice 'DISCOVERY DONE';
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- typing channel authorization (realtime.messages policies)
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  p1 uuid := '20000000-0000-0000-0000-000000000001';
+  p2 uuid := '20000000-0000-0000-0000-000000000002';
+  p3 uuid := '20000000-0000-0000-0000-000000000003';
+  m uuid;
+  topic text;
+begin
+  perform testh.as_admin();
+  insert into auth.users (id) select unnest(array[p1, p2, p3]);
+  insert into public.matches (user_a, user_b) values (least(p1, p2), greatest(p1, p2)) returning id into m;
+  topic := 'typing:' || m;
+
+  perform testh.ok('helper accepts a participant on the right topic', private.can_use_typing_topic(topic, p1) and private.can_use_typing_topic(topic, p2));
+  perform testh.ok('helper rejects an outsider', not private.can_use_typing_topic(topic, p3));
+  perform testh.ok('helper rejects other topics and malformed names without erroring',
+    not private.can_use_typing_topic('typing:not-a-uuid', p1)
+    and not private.can_use_typing_topic('room-1', p1)
+    and not private.can_use_typing_topic('typing:' || gen_random_uuid(), p1));
+
+  -- The policies, as Realtime evaluates them: topic setting + the user's role/claims.
+  perform set_config('realtime.topic', topic, false);
+  perform testh.as_user(p1);
+  insert into realtime.messages (topic, extension) values (topic, 'broadcast');
+  perform testh.ok('participant can send on their typing channel', true);
+  perform testh.ok('participant can receive on it', testh.n('select 1 from realtime.messages where extension = ''broadcast''') >= 1);
+
+  perform testh.as_user(p3);
+  perform testh.fails('outsider cannot send on it', 'insert into realtime.messages (topic, extension) values (''' || topic || ''', ''broadcast'')', 'row-level security');
+  perform testh.ok('outsider cannot receive on it', testh.n('select 1 from realtime.messages') = 0);
+
+  perform testh.as_user(p1);
+  perform testh.fails('presence/other extensions are not allowed', 'insert into realtime.messages (topic, extension) values (''' || topic || ''', ''presence'')', 'row-level security');
+  perform set_config('realtime.topic', 'typing:' || gen_random_uuid(), false);
+  perform testh.fails('participant cannot use a different match''s channel', 'insert into realtime.messages (topic, extension) values (''x'', ''broadcast'')', 'row-level security');
+
+  execute 'set role anon';
+  perform testh.fails('signed-out callers get nothing', 'select * from realtime.messages', 'permission denied');
+  perform testh.as_admin();
+  raise notice 'TYPING DONE';
+end $$;

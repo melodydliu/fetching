@@ -3,7 +3,16 @@
  * Column names are snake_case in Postgres, camelCase in the app.
  */
 import { defaultDealbreakers, defaultNotifications, defaultPreferences } from '@/domain/defaults';
-import type { Like, Match, Message, Pet, Photo, PromptAnswer, User } from '@/domain/types';
+import type {
+  DatePlan,
+  Like,
+  Match,
+  Message,
+  Pet,
+  Photo,
+  PromptAnswer,
+  User,
+} from '@/domain/types';
 import type { MatchSummary } from '../types';
 
 export interface PhotoRow {
@@ -299,3 +308,34 @@ export function matchSummaryFromRow(row: MatchSummaryRow, viewerId: string): Mat
     isNew: !lastMessage,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Play Dates
+// ---------------------------------------------------------------------------
+export interface DatePlanRow {
+  id: string;
+  match_id: string;
+  proposer_id: string;
+  kind: DatePlan['kind'];
+  custom_label: string | null;
+  location: string | null;
+  starts_at: string;
+  status: DatePlan['status'];
+  note: string | null;
+  responded_by_id: string | null;
+  created_at: string;
+}
+
+export const datePlanFromRow = (row: DatePlanRow): DatePlan => ({
+  id: row.id,
+  matchId: row.match_id,
+  proposerId: row.proposer_id,
+  kind: row.kind,
+  ...(row.custom_label ? { customLabel: row.custom_label } : {}),
+  ...(row.location ? { location: row.location } : {}),
+  startsAt: row.starts_at,
+  status: row.status,
+  ...(row.note ? { note: row.note } : {}),
+  ...(row.responded_by_id ? { respondedById: row.responded_by_id } : {}),
+  createdAt: row.created_at,
+});

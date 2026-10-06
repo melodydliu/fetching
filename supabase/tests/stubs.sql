@@ -9,3 +9,10 @@ create function storage.foldername(name text) returns text[] language sql as $$ 
 create publication supabase_realtime;
 grant usage on schema auth, storage to authenticated, anon;
 grant select on auth.users to authenticated;
+
+create schema realtime;
+create table realtime.messages (id uuid primary key default gen_random_uuid(), topic text, extension text);
+alter table realtime.messages enable row level security;
+create function realtime.topic() returns text language sql stable as $$ select nullif(current_setting('realtime.topic', true), '') $$;
+grant usage on schema realtime to authenticated, anon;
+grant select, insert on realtime.messages to authenticated;

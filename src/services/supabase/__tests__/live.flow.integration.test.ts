@@ -5,11 +5,18 @@
  *
  *   set -a; source .env.local; set +a; RUN_LIVE_TESTS=1 npx jest src/services/supabase/__tests__/live.flow
  */
-import { defaultPreferences } from '@/domain/defaults';
-import type { Gender } from '@/domain/types';
 import { newId } from '@/utils/id';
 import { AlreadyLikedError } from '../../types';
-import { installLiveFetch, LIVE, type LiveUser, signUpLiveUser } from '@/test/liveSupport';
+import {
+  cleanupLiveUsers,
+  finishLiveProfile as finishProfile,
+  installLiveFetch,
+  LIVE,
+  type LiveUser,
+  OAKLAND,
+  SF,
+  signUpLiveUser,
+} from '@/test/liveSupport';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -19,28 +26,6 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 installLiveFetch();
 
 const live = LIVE ? describe : describe.skip;
-
-const SF = { city: 'San Francisco', lat: 37.7749, lng: -122.4194 };
-const OAKLAND = { city: 'Oakland', lat: 37.8044, lng: -122.2712 }; // ~8.4 miles from SF
-
-async function finishProfile(
-  u: LiveUser,
-  name: string,
-  gender: Gender,
-  interestedIn: Gender[],
-  location: typeof SF,
-) {
-  await u.services.users.update(u.id, {
-    firstName: name,
-    birthdate: '1995-05-05',
-    gender,
-    interestedIn,
-    location,
-    preferences: defaultPreferences(31, interestedIn),
-    photos: [0, 1, 2].map((i) => ({ id: newId('ph'), url: `https://example.com/${name}${i}.jpg` })),
-    onboardingComplete: true,
-  });
-}
 
 live('matching flow (live)', () => {
   jest.setTimeout(120_000);
@@ -67,7 +52,7 @@ live('matching flow (live)', () => {
   });
 
   afterAll(async () => {
-    await Promise.allSettled([a, b, c].map((u) => u?.services.auth.deleteAccount()));
+    await cleanupLiveUsers(a, b, c);
   });
 
   it("Discover shows people in range with server-measured distance, their pets, and no one's coordinates", async () => {
