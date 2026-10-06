@@ -1,17 +1,16 @@
 import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
-import { Avatar } from '@/components/ui/Avatar';
-import { Chip } from '@/components/ui/Chip';
+import { useState } from 'react';
+import { type LayoutChangeEvent, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { LikeCard } from '@/components/likes/LikeCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { ListRow } from '@/components/ui/ListRow';
 import { Screen } from '@/components/ui/Screen';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { ageFromBirthdate } from '@/domain/geo';
 import { useIncomingLikes, useUsers, useViewerProfile } from '@/hooks/queries';
 import { useTheme } from '@/hooks/useTheme';
-import { describeLikeTarget } from '@/utils/describeLike';
+import { describeLikeTargetShort } from '@/utils/describeLike';
 
 export default function LikesYouScreen() {
   const { spacing } = useTheme();
@@ -19,19 +18,33 @@ export default function LikesYouScreen() {
   const senderIds = [...new Set(likes.data?.map((l) => l.fromUserId) ?? [])];
   const senders = useUsers(senderIds);
   const viewer = useViewerProfile();
+  const { width: windowWidth } = useWindowDimensions();
+  // Start from the window width so cards render at once; onLayout then refines it.
+  const [gridWidth, setGridWidth] = useState(windowWidth - spacing.lg * 2);
+  const cardWidth = Math.floor((gridWidth - spacing.md) / 2);
+
+  const onGridLayout = (e: LayoutChangeEvent) => setGridWidth(e.nativeEvent.layout.width);
 
   const loading =
     likes.isPending || (senderIds.length > 0 && (senders.isPending || viewer.isPending));
 
   return (
     <Screen tabbed scroll>
-      <Text variant="titleItalic" style={{ marginBottom: spacing.lg }}>
-        Likes You
+      <Text variant="titleItalic">Likes You</Text>
+      <Text variant="small" color="textMuted" style={{ marginBottom: spacing.lg }}>
+        {likes.data?.length
+          ? `${likes.data.length} ${likes.data.length === 1 ? 'person has' : 'people have'} their eye on you`
+          : 'Everyone who has liked you, in one place'}
       </Text>
       {loading ? (
-        <View style={{ gap: spacing.md }}>
+        <View style={[styles.grid, { gap: spacing.md }]} onLayout={onGridLayout}>
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} height={88} radius={20} />
+            <Skeleton
+              key={i}
+              width={cardWidth || '48%'}
+              height={Math.round(((cardWidth || 160) * 4) / 3)}
+              radius={20}
+            />
           ))}
         </View>
       ) : likes.isError ? (
@@ -47,29 +60,26 @@ export default function LikesYouScreen() {
           />
         </View>
       ) : (
-        <View style={{ gap: spacing.md }}>
+        <View style={[styles.grid, { gap: spacing.md }]} onLayout={onGridLayout}>
           {likes.data.map((like) => {
             const sender = senders.data?.find((u) => u.id === like.fromUserId);
             if (!sender || !viewer.data) return null;
             return (
-              <ListRow
+              <LikeCard
                 key={like.id}
-                leading={<Avatar url={sender.photos[0]!.url} name={sender.firstName} />}
-                title={`${sender.firstName}, ${ageFromBirthdate(sender.birthdate)}`}
-                subtitle={[
-                  describeLikeTarget(like, viewer.data),
-                  like.comment ? `“${like.comment}”` : null,
-                ]
-                  .filter(Boolean)
-                  .join('\n')}
-                trailing={like.isTreat ? <Chip label="Treat" tone="accent" /> : undefined}
+                width={cardWidth}
+                photoUrl={sender.photos[0]!.url}
+                name={sender.firstName}
+                age={ageFromBirthdate(sender.birthdate)}
+                target={describeLikeTargetShort(like, viewer.data)}
+                comment={like.comment || undefined}
+                isTreat={like.isTreat}
                 onPress={() =>
                   router.push({
                     pathname: '/user/[id]',
                     params: { id: sender.id, likeId: like.id },
                   })
                 }
-                accessibilityHint="Opens their profile"
               />
             );
           })}
@@ -79,4 +89,7 @@ export default function LikesYouScreen() {
   );
 }
 
-const styles = StyleSheet.create({ emptyWrap: { minHeight: 480 } });
+const styles = StyleSheet.create({
+  emptyWrap: { minHeight: 480 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+});

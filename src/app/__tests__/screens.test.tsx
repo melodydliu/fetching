@@ -15,10 +15,10 @@ jest.mock('expo-router', () => ({
 beforeEach(() => jest.clearAllMocks());
 
 describe('Likes You', () => {
-  it('lists who liked you, saying what they liked, and opens their profile', async () => {
+  it('shows who liked you as a grid of cards and opens their profile', async () => {
     await renderWithApp(<LikesYouScreen />);
-    await waitFor(() => expect(screen.getAllByText(/^Liked /).length).toBeGreaterThan(0));
-    expect(screen.getByText('Treat')).toBeTruthy();
+    await waitFor(() => expect(screen.getAllByLabelText(/, liked /).length).toBeGreaterThan(0));
+    expect(screen.getAllByLabelText(/sent a Treat/).length).toBeGreaterThan(0);
     await fireEvent.press(screen.getAllByRole('button')[0]!);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({

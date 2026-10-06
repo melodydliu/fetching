@@ -13,3 +13,12 @@ export function describeLikeTarget(like: Like, recipient: Profile): string {
   const prompt = answer && promptById(answer.promptId);
   return prompt ? `Liked your answer to “${prompt.text}”` : 'Liked your prompt';
 }
+
+/** Compact "what they liked" for tiles: "Your photo", "Biscuit", "Your prompt". */
+export function describeLikeTargetShort(like: Like, recipient: Profile): string {
+  const { target } = like;
+  if (target.type === 'photo') return 'Your photo';
+  if (target.type === 'pet')
+    return recipient.pets.find((p) => p.id === target.id)?.name ?? 'Your pet';
+  return 'Your prompt';
+}
