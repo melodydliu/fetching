@@ -532,7 +532,7 @@ function PetCard({ pet, likeButton }: { pet: Pet; likeButton: ReactNode | null }
   const { colors, radii, spacing } = useTheme();
   const details = [
     pet.breed ?? SPECIES_LABELS[pet.species],
-    `${pet.ageYears} ${pet.ageYears === 1 ? 'yr' : 'yrs'}`,
+    pet.ageYears === undefined ? null : `${pet.ageYears} ${pet.ageYears === 1 ? 'yr' : 'yrs'}`,
     pet.size ? cap(pet.size) : null,
   ].filter((x): x is string => !!x);
   const social = (

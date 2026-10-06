@@ -29,12 +29,12 @@ export function BreedField({ species, value, onChange }: BreedFieldProps) {
   return (
     <View style={{ gap: spacing.xs }}>
       <TextField
-        label={list ? 'Breed' : 'Type (e.g. Mini Lop, Budgie)'}
+        label="Breed (optional)"
         value={value}
         onChangeText={onChange}
         onFocus={() => setFocused(true)}
         onBlur={() => setTimeout(() => setFocused(false), 150)}
-        placeholder={list ? 'Search breeds' : 'Optional'}
+        placeholder={list ? 'Search breeds' : undefined}
         autoCapitalize="words"
         autoCorrect={false}
       />

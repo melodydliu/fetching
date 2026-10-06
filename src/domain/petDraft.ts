@@ -33,7 +33,7 @@ export const petToDraft = (pet: Pet): PetDraft => ({
   name: pet.name,
   species: pet.species,
   breed: pet.breed ?? '',
-  age: String(pet.ageYears),
+  age: pet.ageYears === undefined ? '' : String(pet.ageYears),
   size: pet.size ?? null,
   energy: pet.energy,
   goodWith: { ...pet.goodWith },
@@ -51,21 +51,22 @@ export function parsePetAge(text: string): number | null {
 
 export const validatePetBasics = (d: PetDraft): boolean => d.name.trim().length > 0;
 
+/** Breed and age are optional; a dog still needs a size. If an age is typed it must be usable. */
 export const validatePetDetails = (d: PetDraft): boolean =>
-  parsePetAge(d.age) !== null && (d.species !== 'dog' || d.size !== null);
+  (d.age.trim() === '' || parsePetAge(d.age) !== null) && (d.species !== 'dog' || d.size !== null);
 
 export const validatePetPhotos = (d: PetDraft): boolean => d.photos.length >= config.minPetPhotos;
 
 export const validatePet = (d: PetDraft): boolean =>
   validatePetBasics(d) && validatePetDetails(d) && validatePetPhotos(d);
 
-/** Fields as stored on a Pet. Size is dropped for non-dogs; empty breed becomes undefined. */
+/** Fields as stored on a Pet. Size is dropped for non-dogs; empty breed or age becomes undefined. */
 export function draftToPetFields(d: PetDraft): Omit<Pet, 'id' | 'ownerId'> {
   return {
     name: d.name.trim(),
     species: d.species,
     breed: d.breed.trim() || undefined,
-    ageYears: parsePetAge(d.age) ?? 0,
+    ageYears: parsePetAge(d.age) ?? undefined,
     size: d.species === 'dog' ? (d.size ?? undefined) : undefined,
     energy: d.energy,
     goodWith: { ...d.goodWith },

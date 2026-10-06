@@ -55,8 +55,8 @@ export function HasPetStep({ profile, ...step }: StepProps) {
   const [kind, setKind] = useState<AccountKind | null>(alreadyChosen ? profile.user.kind : null);
   return (
     <StepLayout
-      title="Is there a pet in your life?"
-      subtitle="Both are welcome here. Pets are the icebreaker, not a requirement."
+      title="Do you have a pet?"
+      subtitle="If so, include them in your profile. If not, you’re still welcome here as an animal lover!"
       progress={step.progress}
       onBack={step.onBack}
       primaryDisabled={!kind}

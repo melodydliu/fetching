@@ -112,7 +112,7 @@ function petRow(pet: SeedData['pets'][number]): Row {
     name: pet.name,
     species: pet.species,
     breed: pet.breed ?? null,
-    age_years: pet.ageYears,
+    age_years: pet.ageYears ?? null,
     size: pet.size ?? null,
     energy: pet.energy,
     good_with_dogs: pet.goodWith.dogs,

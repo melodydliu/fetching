@@ -115,6 +115,30 @@ live('Supabase repositories (live)', () => {
     expect(await s.pets.listByOwner(me)).toEqual([]);
   });
 
+  it('saves a pet with no age and no breed, and lets age be added and cleared again', async () => {
+    const photos = [0, 1, 2].map((i) => ({
+      id: newId('ph'),
+      url: `https://example.com/cat${i}.jpg`,
+    }));
+    const pet = await s.pets.create({
+      ownerId: me,
+      name: 'Miso',
+      species: 'cat',
+      energy: 'low',
+      goodWith: { dogs: 'unsure', cats: 'unsure', kids: 'unsure' },
+      personalityTags: [],
+      photos,
+    });
+    expect(pet.ageYears).toBeUndefined();
+    expect(pet.breed).toBeUndefined();
+
+    expect((await s.pets.update(pet.id, { ageYears: 0, breed: 'Siamese' })).ageYears).toBe(0);
+    const cleared = await s.pets.update(pet.id, { ageYears: undefined, breed: undefined });
+    expect(cleared.ageYears).toBeUndefined();
+    expect(cleared.breed).toBeUndefined();
+    await s.pets.remove(pet.id);
+  });
+
   it('uploads a photo to Storage and removes the file when the photo is dropped', async () => {
     const photo = await s.media.upload(PHOTO_URI);
     expect(photo.url).toContain(`/storage/v1/object/public/photos/${me}/${photo.id}.png`);

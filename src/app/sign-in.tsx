@@ -34,7 +34,7 @@ export default function SignInScreen() {
   });
 
   return (
-    <Screen scroll noTopInset>
+    <Screen scroll>
       <ScreenHeader title={signingUp ? 'Create your account' : 'Welcome back'} back />
       <View style={{ gap: spacing.xl }}>
         <TextField

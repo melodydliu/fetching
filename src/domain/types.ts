@@ -51,7 +51,8 @@ export interface Pet {
   name: string;
   species: Species;
   breed?: string;
-  ageYears: number;
+  /** Optional: people can leave it out. */
+  ageYears?: number;
   /** Dogs only. */
   size?: DogSize;
   energy: EnergyLevel;

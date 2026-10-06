@@ -62,7 +62,7 @@ export interface PetRow {
   name: string;
   species: Pet['species'];
   breed: string | null;
-  age_years: number | string;
+  age_years: number | string | null;
   size: Pet['size'] | null;
   energy: Pet['energy'];
   good_with_dogs: Pet['goodWith']['dogs'];
@@ -171,7 +171,7 @@ export function petFromRow(row: PetRow): Pet {
     name: row.name,
     species: row.species,
     ...(row.breed ? { breed: row.breed } : {}),
-    ageYears: Number(row.age_years),
+    ...(row.age_years === null ? {} : { ageYears: Number(row.age_years) }),
     ...(row.size ? { size: row.size } : {}),
     energy: row.energy,
     goodWith: { dogs: row.good_with_dogs, cats: row.good_with_cats, kids: row.good_with_kids },
@@ -188,7 +188,7 @@ export function petPatchToRow(
   if (patch.name !== undefined) row.name = patch.name;
   if (patch.species !== undefined) row.species = patch.species;
   if ('breed' in patch) row.breed = patch.breed ?? null;
-  if (patch.ageYears !== undefined) row.age_years = patch.ageYears;
+  if ('ageYears' in patch) row.age_years = patch.ageYears ?? null;
   if ('size' in patch) row.size = patch.size ?? null;
   if (patch.energy !== undefined) row.energy = patch.energy;
   if (patch.goodWith !== undefined) {

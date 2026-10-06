@@ -153,6 +153,15 @@ describe('pets', () => {
     ]);
   });
 
+  it('treats a missing age as no age, and clears it when explicitly unset', () => {
+    const pet = petFromRow({ ...petRow, age_years: null, breed: null });
+    expect(pet.ageYears).toBeUndefined();
+    expect('ageYears' in pet).toBe(false);
+    expect(petPatchToRow({ ageYears: undefined })).toEqual({ age_years: null });
+    expect(petPatchToRow({ ageYears: 0 })).toEqual({ age_years: 0 });
+    expect(petPatchToRow({ name: 'B' })).toEqual({ name: 'B' }); // untouched when not in the patch
+  });
+
   it('maps a patch, clearing breed/size when explicitly unset', () => {
     expect(
       petPatchToRow({

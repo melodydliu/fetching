@@ -77,7 +77,7 @@ export function PetDetailsSection({ draft, onChange }: SectionProps) {
         onChange={(breed) => onChange({ breed })}
       />
       <TextField
-        label="Age in years"
+        label="Age in years (optional)"
         hint="Under a year old? Enter 0."
         value={draft.age}
         onChangeText={(age) => onChange({ age: age.replace(/[^0-9]/g, '') })}

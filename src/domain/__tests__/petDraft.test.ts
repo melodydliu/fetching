@@ -39,8 +39,19 @@ describe('validation', () => {
     expect(validatePetDetails({ ...dog, species: 'cat' })).toBe(true);
   });
 
-  it('requires an age', () => {
-    expect(validatePetDetails({ ...emptyPetDraft(), species: 'cat', age: '' })).toBe(false);
+  it('treats breed and age as optional, but rejects an age that cannot be used', () => {
+    const cat = { ...emptyPetDraft(), species: 'cat' as const };
+    expect(validatePetDetails({ ...cat, breed: '', age: '' })).toBe(true);
+    expect(validatePetDetails({ ...cat, age: '4' })).toBe(true);
+    expect(validatePetDetails({ ...cat, age: '  ' })).toBe(true);
+    expect(validatePetDetails({ ...cat, age: '75' })).toBe(false);
+  });
+
+  it('leaves age and breed out of the saved pet when they were left blank', () => {
+    const fields = draftToPetFields({ ...emptyPetDraft(), name: 'Miso', species: 'cat' });
+    expect(fields.ageYears).toBeUndefined();
+    expect(fields.breed).toBeUndefined();
+    expect(petToDraft({ id: 'p', ownerId: 'u', ...fields }).age).toBe('');
   });
 
   it('requires 3+ photos', () => {

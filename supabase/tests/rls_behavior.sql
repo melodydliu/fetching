@@ -62,8 +62,11 @@ begin
   perform testh.as_user(a);
   insert into public.pets (id, owner_id, name, species, age_years, energy) values ('11111111-1111-1111-1111-111111111111', a, 'Biscuit', 'dog', 3, 'high');
   insert into public.photos (owner_id, pet_id, url) values (a, '11111111-1111-1111-1111-111111111111', 'http://x/p.jpg');
+  insert into public.pets (id, owner_id, name, species, energy) values ('11111111-1111-1111-1111-111111111112', a, 'Ageless', 'cat', 'low');
+  perform testh.ok('a pet can be saved with no age and no breed', (select age_years is null and breed is null from public.pets where name = 'Ageless'));
+  perform testh.fails('an out-of-range age is still rejected', 'insert into public.pets (owner_id, name, species, energy, age_years) values (''' || a || ''', ''Old'', ''cat'', ''low'', 99)', 'violates check');
   perform testh.as_user(b);
-  perform testh.ok('B can see A''s pet and photo', testh.n('select 1 from public.pets') = 1 and testh.n('select 1 from public.photos') = 1);
+  perform testh.ok('B can see A''s pets and photo', testh.n('select 1 from public.pets') = 2 and testh.n('select 1 from public.photos') = 1);
   perform testh.fails('B cannot put a photo on A''s pet', 'insert into public.photos (owner_id, pet_id, url) values (''' || b || ''', ''11111111-1111-1111-1111-111111111111'', ''u'')', 'row-level security');
   perform testh.fails('B cannot add a pet for A', 'insert into public.pets (owner_id, name, species, age_years, energy) values (''' || a || ''', ''n'', ''dog'', 1, ''low'')', 'row-level security');
 

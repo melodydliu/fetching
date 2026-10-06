@@ -44,6 +44,7 @@ src/state/          Zustand: devStore (forced empty states), toastStore.
 ## Onboarding & profile (Phase 1)
 - Flow rules are pure and tested in `src/domain/onboarding.ts` (step order per user type, 18+ birthday validation, completeness). UI in `src/features/onboarding/`.
 - `signUp` creates a bare account (`onboardingComplete: false`). Each finished/skipped step is appended to `user.onboardingSteps`, so relaunching resumes in place. `Stack.Protected` in `app/_layout.tsx` routes signed-out / onboarding / ready.
+- A pet's breed and age are optional (`Pet.ageYears?`, `pets.age_years` nullable); a dog still needs a size. The profile card just omits what's missing.
 - Pet form = 4 sections (`components/pets/PetSections.tsx`): one per onboarding screen, all stacked in `app/pet/[id].tsx`.
 - Profile writes go through `useProfileActions()`: optimistic cache update, background persist, toast + refetch on failure.
 - `PhotoGrid` does long-press drag-reorder (gesture-handler + reanimated) and exposes Move earlier/later/Remove as a11y actions. Use `.get()`/`.set()` on shared values (React Compiler lint).
