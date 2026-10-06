@@ -1,7 +1,16 @@
 # Fetching: status and to-do
 
 A dating app for people whose pets are family. Expo SDK 57 + React Native + TypeScript, running entirely on mock services.
-Last updated after **Phase 4**, the device pass and loose-ends cleanup. 275 unit tests passing across 23 suites.
+Last updated after **Phase 4** and the follow-up polish (pushed to `main`, commit `87c470e`). 278 unit tests passing across 23 suites; typecheck and lint clean.
+
+## What's left (start here)
+All four build phases are code-complete. What remains:
+1. **Real-device pass in Expo Go** (only the web build has been clicked through so far): haptics, the GPS "Use my current location" prompt, photo picking and drag-reorder, keyboard behaviour in chat, and **dark mode by eye**.
+2. **Open product decision, paused by you:** make every Preferences section a multi-select where unselected options are hidden and selecting none shows nobody. Two questions were left open: (a) what happens to the Dealbreaker switches if everything becomes a hard filter, and (b) whether pet filters (species, size, energy) apply to animal lovers, who have no pets. Nothing was changed.
+3. **Design task:** rework how pets are viewed on a profile (the tinted "Meet [pet]" panel is a stopgap; pet bubbles now open a sheet).
+4. **Branding (you're handling at the end):** app icon and splash, the app name (one constant in `src/config` plus `app.json`), commissioned illustrations.
+5. **Small leftovers:** seed photos for rabbits/birds, Likes You as a grid, chat typing indicator, a "whole profile" like type, optional photos for animal lovers (all optional for MVP; details below).
+6. **Later (not now, per the brief):** Supabase (real auth/DB/storage/realtime), Expo push (notification settings are already stored), photo verification and moderation, suggested venues for Play Dates, monetization.
 
 Legend: `[x]` done · `[ ]` to do · `[~]` partly done
 
@@ -57,7 +66,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 
 ---
 
-## Phase 3: Likes You, matches, chat, Play Date (built; needs a pass on a device)
+## Phase 3: Likes You, matches, chat, Play Date (done; device pass pending)
 - [x] **Likes You** rows open the person's full profile (`app/user/[id].tsx`) with what they liked + their comment, and a floating **Remove** / **Like back** pair
 - [x] **Like back** (`likes.likeBack`) creates the match without spending a daily like; Remove hides the like
 - [x] **Match moment** (`app/match-moment.tsx`): both people and their pets, success haptic, "Send a message" / "Keep browsing". Shown after a mutual like in Discover and after Like back
@@ -68,9 +77,9 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 - [x] **Edit / delete** a Play Date you planned (Edit and Delete buttons on your own card): editing reuses the planner, sends it back to "proposed" so they confirm again; delete asks first and removes the card. Edit is only available before the date; the other person can't edit or delete (they can decline)
 - [x] Dev Menu: "Incoming Play Date plan" and "They accept my Play Date"
 - [x] Tests: date-plan rules, like back, change-suggested flow
-- [ ] Open items: try it on a device/Expo Go (no screens were run in a simulator yet); no day separators or typing indicator in chat; date plans don't post a system line when answered; no push; unmatch/block/report UI is Phase 4; Likes You rows are still a list, not a grid
+- [ ] Open items: try it on a device/Expo Go; no typing indicator in chat; date plans don't post a system line when answered; no push; Likes You rows are still a list, not a grid
 
-## Phase 4: Preferences, settings, safety, polish (built; device check pending)
+## Phase 4: Preferences, settings, safety, polish (done; device check pending)
 - [x] **Preferences screen** (`app/preferences.tsx`, Profile tab → Preferences): age range steppers, distance, gender (when you're interested in more than one), looking for, show me (pet owners / animal lovers / everyone), their pets (species, dog size, energy). Draft + **Save changes**, discard prompt, "Reset to defaults". Rules in `domain/preferencesDraft.ts`
 - [x] **Dealbreaker toggles** under every preference except age and distance (those always apply, both ways); a toggle is disabled until something is picked and is switched off automatically if you clear the selection
 - [x] **My pet isn't good with dogs/cats** (pet owners) and **I'm allergic to** + "hide people who have these animals" (everyone). Allergies moved here from Edit profile
@@ -91,7 +100,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 - [x] Captions for pet photos (editable in the pet form, shown over the carousel photo)
 - [ ] The hero Like targets the hero photo; consider a true "whole profile" like type (touches Likes You rendering)
 - [x] Other screens that show a profile (Likes You, chat header) use the hero layout via `app/user/[id].tsx`
-- [ ] Preferences "looking for" (Discover filter) is already multi in the data model; its UI comes in Phase 4
+- [x] Preferences "looking for" is multi-select in the Preferences screen
 - [x] Seed users now have 1–5 prompts each
 - [ ] Animal lovers can't add optional photos of animals they love (brief says optional; not needed for MVP)
 - [x] There is no account type to pick: a profile is a **pet owner exactly when it has a pet** (`domain/accountKind.ts` keeps `user.kind` in step when a pet is added or the last one removed). Animal lovers get an **Add a pet** button in Edit profile; removing your last pet makes you an animal lover (pet-only prompts are dropped)
