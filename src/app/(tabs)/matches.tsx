@@ -19,7 +19,7 @@ export default function MatchesScreen() {
   const loading = matches.isPending || (otherIds.length > 0 && others.isPending);
 
   return (
-    <Screen tabbed scroll>
+    <Screen tabbed scroll contentStyle={{ flexGrow: 1 }}>
       <Text variant="titleItalic" style={{ marginBottom: spacing.lg }}>
         Matches
       </Text>
@@ -74,4 +74,4 @@ export default function MatchesScreen() {
   );
 }
 
-const styles = StyleSheet.create({ emptyWrap: { minHeight: 480 } });
+const styles = StyleSheet.create({ emptyWrap: { flex: 1, minHeight: 360 } });

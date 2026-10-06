@@ -29,7 +29,7 @@ export default function LikesYouScreen() {
     likes.isPending || (senderIds.length > 0 && (senders.isPending || viewer.isPending));
 
   return (
-    <Screen tabbed scroll>
+    <Screen tabbed scroll contentStyle={{ flexGrow: 1 }}>
       <Text variant="titleItalic">Likes You</Text>
       <Text variant="small" color="textMuted" style={{ marginBottom: spacing.lg }}>
         {likes.data?.length
@@ -90,6 +90,6 @@ export default function LikesYouScreen() {
 }
 
 const styles = StyleSheet.create({
-  emptyWrap: { minHeight: 480 },
+  emptyWrap: { flex: 1, minHeight: 360 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
 });

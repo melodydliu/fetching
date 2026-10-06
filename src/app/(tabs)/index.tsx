@@ -181,6 +181,12 @@ export default function DiscoverScreen() {
   const outOfEverything = !!q && q.likesRemaining === 0 && !q.treatAvailable;
   const barBottom = Math.max(insets.bottom, 12);
   const padded = { paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.lg };
+  // The empty states fill the screen (buttons at the bottom, above the tab bar); a profile needs
+  // the extra room underneath for the floating Skip / Like pair.
+  const showingEmptyState =
+    !candidates.isPending &&
+    !candidates.isError &&
+    (outOfEverything || (!current && !(list && list.length > 0)));
 
   return (
     <View style={[styles.flex, webViewportCap, { backgroundColor: colors.background }]}>
@@ -188,7 +194,8 @@ export default function DiscoverScreen() {
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: TAB_BAR_CLEARANCE + insets.bottom + 120,
+          flexGrow: 1,
+          paddingBottom: TAB_BAR_CLEARANCE + insets.bottom + (showingEmptyState ? 0 : 120),
         }}
       >
         {candidates.isPending || (q === undefined && quota.isPending) ? (
@@ -353,7 +360,7 @@ export default function DiscoverScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
-  emptyWrap: { minHeight: 480 },
+  emptyWrap: { flex: 1, minHeight: 360 },
   note: { paddingHorizontal: 12, paddingVertical: 8, overflow: 'hidden' },
   floatBar: {
     position: 'absolute',

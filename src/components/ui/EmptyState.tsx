@@ -14,7 +14,10 @@ interface EmptyStateProps {
   onSecondary?: () => void;
 }
 
-/** Friendly dead-end replacement. Always offers a way forward when one exists. */
+/**
+ * Friendly dead-end replacement. Always offers a way forward when one exists. Fills the space it
+ * is given (give it a parent with flex: 1), so the buttons land at the bottom of the screen.
+ */
 export function EmptyState({
   illustration,
   title,
@@ -25,29 +28,32 @@ export function EmptyState({
   onSecondary,
 }: EmptyStateProps) {
   const { spacing } = useTheme();
+  const hasActions = !!(actionLabel && onAction) || !!(secondaryLabel && onSecondary);
   return (
-    <View style={[styles.wrap, { gap: spacing.md, paddingHorizontal: spacing.lg }]}>
-      <Illustration name={illustration} />
-      <Text variant="titleItalic" align="center">
-        {title}
-      </Text>
-      <Text variant="body" color="textMuted" align="center">
-        {body}
-      </Text>
-      {actionLabel && onAction && (
-        <Button
-          label={actionLabel}
-          onPress={onAction}
-          style={{ alignSelf: 'stretch', marginTop: spacing.sm }}
-        />
-      )}
-      {secondaryLabel && onSecondary && (
-        <Button label={secondaryLabel} onPress={onSecondary} variant="ghost" />
+    <View style={styles.wrap}>
+      <View style={[styles.content, { gap: spacing.md, paddingHorizontal: spacing.lg }]}>
+        <Illustration name={illustration} />
+        <Text variant="titleItalic" align="center">
+          {title}
+        </Text>
+        <Text variant="body" color="textMuted" align="center">
+          {body}
+        </Text>
+      </View>
+      {hasActions && (
+        <View style={{ gap: spacing.xs, paddingTop: spacing.md }}>
+          {actionLabel && onAction && <Button label={actionLabel} onPress={onAction} />}
+          {secondaryLabel && onSecondary && (
+            <Button label={secondaryLabel} onPress={onSecondary} variant="ghost" />
+          )}
+        </View>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // Picture and words sit in the middle of the space; buttons are pinned to the bottom.
+  wrap: { flex: 1 },
+  content: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

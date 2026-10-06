@@ -18,7 +18,7 @@ export default function BlockedUsersScreen() {
   const { unblock } = useSafetyActions();
 
   return (
-    <Screen scroll>
+    <Screen scroll contentStyle={{ flexGrow: 1 }}>
       <ScreenHeader title="Blocked people" back />
       {blocked.isPending ? (
         <View style={{ gap: spacing.md }}>
@@ -29,7 +29,7 @@ export default function BlockedUsersScreen() {
       ) : blocked.isError ? (
         <ErrorState onRetry={() => void blocked.refetch()} />
       ) : blocked.data.length === 0 ? (
-        <View style={{ minHeight: 420 }}>
+        <View style={{ flex: 1, minHeight: 360 }}>
           <EmptyState
             illustration="empty-blocked"
             title="Nobody blocked"
