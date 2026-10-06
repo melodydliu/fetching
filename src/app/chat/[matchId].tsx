@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DatePlanCard } from '@/components/chat/DatePlanCard';
+import { Illustration } from '@/components/illustrations/Illustration';
 import { DateTimePicker } from '@/components/chat/DateTimePicker';
 import { chatListLayout } from '@/components/chat/listLayout';
 import { MessageBubble } from '@/components/chat/MessageBubble';
@@ -403,7 +404,7 @@ export default function ChatScreen() {
       ) : gone ? (
         <View style={{ padding: spacing.lg, flex: 1 }}>
           <EmptyState
-            illustration="speech-paws"
+            illustration="empty-match-gone"
             title="This match is no longer here"
             body="They may have unmatched, or the chat was removed."
             actionLabel="Back to Matches"
@@ -429,6 +430,7 @@ export default function ChatScreen() {
             }
             ListEmptyComponent={
               <View style={[styles.empty, { gap: spacing.sm }]}>
+                <Illustration name="empty-chat-thread" width={220} />
                 <Text variant="heading" align="center">
                   You matched with {name}!
                 </Text>
@@ -569,7 +571,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   // The list is inverted, so flip the placeholder back upright.
-  empty: { paddingVertical: 48, transform: [{ scaleY: -1 }] },
+  empty: { paddingVertical: 48, alignItems: 'center', transform: [{ scaleY: -1 }] },
   day: { marginVertical: 8 },
   backdrop: { flex: 1, justifyContent: 'flex-end' },
 });

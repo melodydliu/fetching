@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { SpotIllustration } from '@/components/illustrations/SpotIllustration';
+import { Illustration } from '@/components/illustrations/Illustration';
 import { PromptEditor } from '@/components/PromptEditor';
 import { OptionCard } from '@/components/ui/OptionCard';
 import { Text } from '@/components/ui/Text';
@@ -145,7 +145,7 @@ export function DoneStep({ profile, ...step }: StepProps) {
       onPrimary={() => step.onContinue()}
     >
       <View style={{ alignItems: 'center', gap: 16 }}>
-        <SpotIllustration name="heart-leash" size={240} />
+        <Illustration name="onboarding-finish" width={240} />
         <Text variant="body" color="textMuted" align="center">
           Your profile stays hidden from Discover until you tap below.
         </Text>

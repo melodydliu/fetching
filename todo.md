@@ -117,7 +117,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 - [ ] App icon and splash are still the Expo template defaults
 - [ ] Unconfirmed: the URL briefly showed `/dev-menu` right after sign-up on the web target; watch for a flash on device
 - [ ] Two web-only React warnings about native accessibility props from library internals (harmless on iOS/Android)
-- [ ] Illustrations are placeholder SVG spot art; commission or replace before launch
+- [x] Custom illustrations in place (11 PNGs in `assets/illustrations/`); the two Discover empty states currently share one image
 - [ ] App name is a placeholder ("Fetching"): one constant in `src/config` plus `app.json`
 
 ## Later (explicitly not now, per the brief)

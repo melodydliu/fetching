@@ -1,11 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
-import { SpotIllustration, type SpotName } from '../illustrations/SpotIllustration';
+import { Illustration, type IllustrationName } from '../illustrations/Illustration';
 import { Button } from './Button';
 import { Text } from './Text';
 
 interface EmptyStateProps {
-  illustration: SpotName;
+  illustration: IllustrationName;
   title: string;
   body: string;
   actionLabel?: string;
@@ -27,7 +27,7 @@ export function EmptyState({
   const { spacing } = useTheme();
   return (
     <View style={[styles.wrap, { gap: spacing.md, paddingHorizontal: spacing.lg }]}>
-      <SpotIllustration name={illustration} />
+      <Illustration name={illustration} />
       <Text variant="titleItalic" align="center">
         {title}
       </Text>

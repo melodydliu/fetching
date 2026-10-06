@@ -203,7 +203,7 @@ export default function DiscoverScreen() {
         ) : outOfEverything ? (
           <View style={[styles.emptyWrap, padded]}>
             <EmptyState
-              illustration="tennis-ball"
+              illustration="empty-discover-out-of-likes"
               title="You're out of likes for today"
               body={`Fresh likes and your next Treat arrive ${resetsIn(q?.resetsAt)}.${
                 hasLikesWaiting ? " In the meantime, see who's already into you." : ''
@@ -220,7 +220,7 @@ export default function DiscoverScreen() {
           ) : (
             <View style={[styles.emptyWrap, padded]}>
               <EmptyState
-                illustration="tennis-ball"
+                illustration="empty-discover-no-one-nearby"
                 title="You've seen everyone nearby"
                 body={`New people and pets join every day. Check back soon${
                   hasLikesWaiting ? ", or see who's liked you." : '!'

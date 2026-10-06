@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { BirthdateFields } from '@/components/BirthdateFields';
-import { SpotIllustration } from '@/components/illustrations/SpotIllustration';
+import { Illustration } from '@/components/illustrations/Illustration';
 import { OptionCard } from '@/components/ui/OptionCard';
 import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/ui/TextField';
@@ -148,7 +148,7 @@ export function LocationStep({ profile, ...step }: StepProps) {
       onSkip={step.onSkip}
     >
       <View style={{ alignItems: 'center', gap: spacing.lg }}>
-        <SpotIllustration name="tennis-ball" size={200} />
+        <Illustration name="onboarding-location" width={260} />
         {state === 'denied' && (
           <Text variant="small" color="textMuted" align="center" accessibilityLiveRegion="polite">
             No problem. You can turn location on later in Settings. For now we&apos;ll use{' '}

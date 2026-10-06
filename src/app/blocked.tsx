@@ -31,7 +31,7 @@ export default function BlockedUsersScreen() {
       ) : blocked.data.length === 0 ? (
         <View style={{ minHeight: 420 }}>
           <EmptyState
-            illustration="bowl"
+            illustration="empty-blocked"
             title="Nobody blocked"
             body="People you block can't see you and you won't see them. They'll show up here if you ever need to undo it."
           />

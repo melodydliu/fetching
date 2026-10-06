@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
-import { SpotIllustration } from '@/components/illustrations/SpotIllustration';
+import { Illustration } from '@/components/illustrations/Illustration';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -12,7 +12,7 @@ export default function WelcomeScreen() {
   return (
     <Screen>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md }}>
-        <SpotIllustration name="heart-leash" size={240} />
+        <Illustration name="welcome" width={280} />
         <Text variant="display" align="center">
           Your next best walk
         </Text>

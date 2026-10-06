@@ -52,7 +52,7 @@ export default function LikesYouScreen() {
       ) : !likes.data?.length ? (
         <View style={styles.emptyWrap}>
           <EmptyState
-            illustration="heart-leash"
+            illustration="empty-likes-you"
             title="No likes yet. They're on their way."
             body="When someone likes a photo, prompt or pet of yours, they'll show up here."
             actionLabel="Keep browsing"

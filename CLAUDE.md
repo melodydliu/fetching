@@ -106,7 +106,7 @@ Settings -> long-press the version row. Switch mock user, reset data, simulate l
 
 ## Design identity
 Palette (taken from the Login couple illustration): warm cream paper, **coral** (primary, `#C63D22` light / `#FF7F5F` dark), **apricot** (accent `#F6BE62`), **olive sage** (calm), deep teal-navy ink (`#12303F`); dark mode is a teal-black ground with cream text. Token names (`primary`, `accent`, `sage`) are roles, so recolouring is a one-file change in `src/theme/index.ts`. Fraunces (display) + Figtree (UI).
-Illustrations are our own SVG spot art (`components/illustrations`), placeholders for commissioned art.
+Illustrations are the founder's own transparent PNGs in `assets/illustrations/`, named after the screen they belong to (`empty-matches`, `welcome`, ...). Screens use `<Illustration name=... />` (`components/illustrations/Illustration.tsx`, one name -> file map); `EmptyState` takes an `illustration` name. Files are trimmed and capped at 960px; keep new ones the same.
 `design-inspo/` is reference only. Borrow patterns, never copy brands, colors or art.
 
 ## Phase status
