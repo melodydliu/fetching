@@ -51,6 +51,7 @@
     "node-fetch": "2.7.0",
     "prettier": "^3.9.9",
     "react-test-renderer": "^19.2.3",
+    "tsx": "4.23.15",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -61,7 +62,9 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "seed": "tsx scripts/seed.ts",
+    "seed:clean": "tsx scripts/seed-clean.ts"
   },
   "private": true
 }

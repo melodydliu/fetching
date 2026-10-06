@@ -10,7 +10,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { Icon } from '@/components/ui/Icon';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
-import { distanceMiles } from '@/domain/geo';
+import { distanceMiles, hasCoordinates } from '@/domain/geo';
 import { useIncomingLikes, useProfile, useViewerId, useViewerProfile } from '@/hooks/queries';
 import { useTheme } from '@/hooks/useTheme';
 import { useServices } from '@/services';
@@ -109,7 +109,10 @@ export default function UserProfileScreen() {
           <ProfileView
             profile={profile.data}
             distanceMiles={
-              viewer.data
+              // Real backend: other people's coordinates are private (0/0), so show no distance.
+              viewer.data &&
+              hasCoordinates(viewer.data.user.location) &&
+              hasCoordinates(profile.data.user.location)
                 ? distanceMiles(viewer.data.user.location, profile.data.user.location)
                 : undefined
             }

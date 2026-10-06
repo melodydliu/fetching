@@ -4,6 +4,12 @@ const EARTH_RADIUS_MILES = 3958.8;
 
 const toRad = (deg: number) => (deg * Math.PI) / 180;
 
+/**
+ * False for the 0/0 placeholder the real backend gives for other people (their exact location
+ * is private), so callers don't compute a nonsense distance from it.
+ */
+export const hasCoordinates = (point: GeoPoint): boolean => point.lat !== 0 || point.lng !== 0;
+
 /** Great-circle distance in miles. */
 export function distanceMiles(a: GeoPoint, b: GeoPoint): number {
   const dLat = toRad(b.lat - a.lat);

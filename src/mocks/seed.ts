@@ -178,14 +178,19 @@ const ME_ID = 'u-me';
 
 export const SEED_VIEWER_ID = ME_ID;
 
+export interface SeedCenter {
+  lat: number;
+  lng: number;
+  city: string;
+}
+
 /** Rough miles→degrees conversion; fine for fake data. */
-function scatter(rand: () => number, maxMiles: number) {
+function scatter(rand: () => number, maxMiles: number, center: SeedCenter) {
   const radius = Math.sqrt(rand()) * maxMiles;
   const angle = rand() * Math.PI * 2;
   const dLat = (radius * Math.sin(angle)) / 69;
-  const dLng =
-    (radius * Math.cos(angle)) / (69 * Math.cos((config.mockCenter.lat * Math.PI) / 180));
-  return { lat: config.mockCenter.lat + dLat, lng: config.mockCenter.lng + dLng };
+  const dLng = (radius * Math.cos(angle)) / (69 * Math.cos((center.lat * Math.PI) / 180));
+  return { lat: center.lat + dLat, lng: center.lng + dLng };
 }
 
 export interface SeedData {
@@ -193,8 +198,12 @@ export interface SeedData {
   pets: Pet[];
 }
 
-/** `now` only moves activity timestamps, so the mock world feels recently active. */
-export function buildSeed(now: Date = NOW): SeedData {
+/**
+ * `now` only moves activity timestamps, so the mock world feels recently active.
+ * `center` is where everyone lives (within `config.seedRadiusMiles`); the app uses its default,
+ * the seed script passes the tester's own location.
+ */
+export function buildSeed(now: Date = NOW, center: SeedCenter = config.mockCenter): SeedData {
   const rand = mulberry32(20261001);
   const pick = <T>(arr: readonly T[]): T => arr[Math.floor(rand() * arr.length)]!;
   const chance = (p: number) => rand() < p;
@@ -324,7 +333,10 @@ export function buildSeed(now: Date = NOW): SeedData {
     // Prefer a name matching the gender pool; fall back to any unused name if it runs dry.
     const available = namePool.filter((n) => !usedNames.has(n));
     const fallback = [...WOMEN, ...MEN, ...NONBINARY].filter((n) => !usedNames.has(n));
-    const firstName = isMe ? 'Melody' : pick(available.length ? available : fallback);
+    // If every name is taken, reuse one rather than ending up with no name at all.
+    const firstName = isMe
+      ? 'Melody'
+      : pick(available.length ? available : fallback.length ? fallback : namePool);
     usedNames.add(firstName);
 
     const id = isMe ? ME_ID : `u-${i}`;
@@ -407,8 +419,8 @@ export function buildSeed(now: Date = NOW): SeedData {
       gender,
       interestedIn,
       location: {
-        ...scatter(rand, isMe ? 0 : config.seedRadiusMiles),
-        city: config.mockCenter.city,
+        ...scatter(rand, isMe ? 0 : config.seedRadiusMiles, center),
+        city: center.city,
       },
       relationshipGoals: pickGoals(),
       basics: { job: pick(JOBS), hometown: pick(HOMETOWNS) },

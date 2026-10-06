@@ -1,4 +1,4 @@
-import { ageFromBirthdate, distanceMiles } from '../geo';
+import { ageFromBirthdate, distanceMiles, hasCoordinates } from '../geo';
 
 describe('distanceMiles', () => {
   it('is zero for identical points', () => {
@@ -17,6 +17,14 @@ describe('distanceMiles', () => {
     const a = { lat: 40, lng: -74 };
     const b = { lat: 41, lng: -73 };
     expect(distanceMiles(a, b)).toBeCloseTo(distanceMiles(b, a), 8);
+  });
+});
+
+describe('hasCoordinates', () => {
+  it('is false only for the 0/0 placeholder used for private locations', () => {
+    expect(hasCoordinates({ lat: 0, lng: 0 })).toBe(false);
+    expect(hasCoordinates({ lat: 37.77, lng: -122.42 })).toBe(true);
+    expect(hasCoordinates({ lat: 0, lng: 10 })).toBe(true);
   });
 });
 

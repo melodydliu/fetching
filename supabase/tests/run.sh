@@ -16,3 +16,10 @@ psql_ -d postgres -c "create database t"
 psql_ -d t -f supabase/tests/stubs.sql 2>&1 | grep -v "WARNING\|HINT" || true
 for f in supabase/migrations/*.sql; do psql_ -d t -f "$f"; done
 psql_ -d t -f supabase/tests/rls_behavior.sql 2>&1 | grep -E "PASS|FAIL|ALL DONE|ERROR" | sed 's/^psql:[^ ]* //'
+
+# The seed plan must load into the real tables (constraints, enums, foreign keys, triggers).
+echo "== seed plan against the schema"
+psql_ -d postgres -c "create database seedcheck"
+psql_ -d seedcheck -f supabase/tests/stubs.sql 2>&1 | grep -v "WARNING\|HINT" || true
+for f in supabase/migrations/*.sql; do psql_ -d seedcheck -f "$f"; done
+npx tsx scripts/seedSql.ts | psql_ -d seedcheck 2>&1 | grep -E "SEEDCHECK|ERROR|DETAIL" | sed 's/^psql:[^ ]* //'

@@ -26,11 +26,24 @@ Quit mid-way and relaunch to see it resume. Photos use your real photo library.
 Heart any photo, prompt or pet (optionally add a comment), or tap X to skip. Send a Treat from the like sheet.
 Dev Menu -> Daily limits lets you jump straight to the out-of-likes states.
 
+## Running on the real backend (Supabase)
+Mock mode stays the default. To use your real Supabase project instead:
+1. Make sure `.env.local` (git-ignored) has `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` (the publishable key), then add `EXPO_PUBLIC_USE_MOCKS=false` there and restart `npm start` (press `r`, or `npx expo start -c`).
+2. Open the app, **create an account** (email + password) and finish onboarding, including the location step (you need real photos too). New accounts start empty.
+3. Fill the database with test people around you (44 of them, plus likes and matches for your account). Get your **secret key** from the Supabase dashboard (Project Settings -> API Keys -> Secret keys) and pass it for this one command only:
+   `SUPABASE_SECRET_KEY=sb_secret_... npm run seed -- --for you@example.com`
+   (`npm run seed -- --dry-run` shows the plan without a key.)
+4. When you're done testing or before launch, remove every seeded account:
+   `SUPABASE_SECRET_KEY=sb_secret_... npm run seed:clean` (dry run), then add `-- --yes` to delete.
+The secret key bypasses every security rule: never put it in a file, in the app, or in a chat.
+Go back to mock mode any time by removing the line from `.env.local`.
+
 ## Scripts
-`npm test` · `npm run typecheck` · `npm run lint` · `npm run format`
+`npm test` · `npm run typecheck` · `npm run lint` · `npm run format` · `npm run seed` · `npm run seed:clean`
+Database checks (needs Postgres on your PATH): `supabase/tests/run.sh`. Live tests against your real project: see `CLAUDE.md`.
 
 ## Config
-Copy `.env.example` to `.env` to change the mock center point. `EXPO_PUBLIC_USE_MOCKS=false` is reserved for the future Supabase services.
+Copy `.env.example` to `.env` to change the mock center point. `EXPO_PUBLIC_USE_MOCKS=false` switches to the real Supabase services (see above).
 Seed photos come from randomuser.me, dog.ceo and thecatapi (network needed); rabbit/bird pets use a bundled tile.
 
 See `CLAUDE.md` for architecture and conventions.

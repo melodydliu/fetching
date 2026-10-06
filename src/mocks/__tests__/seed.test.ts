@@ -5,7 +5,27 @@ import { buildSeed } from '../seed';
 
 const { users, pets } = buildSeed();
 
+describe('seed centre', () => {
+  it('places everyone around the centre it is given (not the app default)', () => {
+    const laguna = { lat: 33.5427, lng: -117.7854, city: 'Laguna Beach' };
+    const world = buildSeed(new Date(), laguna);
+    const others = world.users.filter((u) => u.id !== 'u-me');
+    expect(others.every((u) => u.location.city === 'Laguna Beach')).toBe(true);
+    expect(
+      others.every((u) => distanceMiles(u.location, laguna) <= config.seedRadiusMiles + 1),
+    ).toBe(true);
+    // ...and the default world is still around the configured centre.
+    expect(users.every((u) => u.location.city === config.mockCenter.city)).toBe(true);
+  });
+});
+
 describe('seed data', () => {
+  it('gives every person a real first name (even when the name pools run dry)', () => {
+    expect(
+      users.every((u) => typeof u.firstName === 'string' && u.firstName.trim().length > 0),
+    ).toBe(true);
+  });
+
   it('has 40–50 users', () => {
     expect(users.length).toBeGreaterThanOrEqual(40);
     expect(users.length).toBeLessThanOrEqual(50);

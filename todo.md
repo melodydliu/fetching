@@ -1,13 +1,13 @@
 # Fetching: status and to-do
 
 A dating app for people whose pets are family. Expo SDK 57 + React Native + TypeScript, running entirely on mock services.
-Last updated after Phase 4, the phone check and the pet-sheet restyle. 293 unit tests passing across 25 suites (+17 live Supabase tests, skipped unless asked); typecheck and lint clean.
+Last updated after Phase 4, the phone check and the pet-sheet restyle. 305 unit tests passing across 26 suites (+17 live Supabase tests, skipped unless asked); typecheck and lint clean.
 
 ## What's left (start here)
 All four build phases are code-complete, and you've checked the app on a phone in Expo Go ("everything looks good so far"). Decisions made: keep the Preferences model as is (an empty section = no preference; the Dealbreaker switch makes a section strict; pet filters already apply to animal lovers), keep the tinted "Meet [pet]" panel, and the pet-bubble sheet now matches that panel exactly.
 1. **Small extras (you said "soon"):** real rabbit/bird seed photos, a "like the whole profile" type, optional photos for animal lovers.
 2. **Branding (you're handling):** app icon and splash, the app name (one constant in `src/config` plus `app.json`), commissioned illustrations.
-3. **In progress: Supabase. Every service now has a real implementation** (`src/services/supabase/`, 17 live tests, 68 local rule checks): auth (email + password), users/pets/media, discovery (server-measured distance), likes, matches, and chat (messages, read receipts, Realtime delivery with catch-up, private typing channel, Play Dates). Next, in order: **seed + cleanup scripts** (seed users tagged `is_seed`; a real-mode Discover is empty without them) -> flip `EXPO_PUBLIC_USE_MOCKS=false` and do a full device pass. Known gaps to handle then: `app/user/[id].tsx` still computes distance from both users' coordinates (must use the server distance; the other person's coordinates are 0/0); daily limits reset at midnight UTC (mock uses local time), so the "resets at" countdown differs from mock; Play Date cards don't update live when the other person answers (they refetch on open; a `date_plans` realtime subscription would fix it). Dashboard to-do (yours): turn OFF "Allow public access" in Realtime settings (defense in depth; the live test already shows an outsider can't hear a match's typing). Before launch: custom SMTP (needs a domain) + turn "Confirm email" back on; then emailed codes / phone.
+3. **In progress: Supabase. Every service now has a real implementation** (`src/services/supabase/`, 17 live tests, 68 local rule checks): auth (email + password), users/pets/media, discovery (server-measured distance), likes, matches, and chat (messages, read receipts, Realtime delivery with catch-up, private typing channel, Play Dates). **Seed + cleanup scripts are built** (`scripts/`, `npm run seed` / `npm run seed:clean`; plan unit-tested and loaded into the real schema by `supabase/tests/run.sh`; see README "Running on the real backend"). Next: **you run the seed, flip `EXPO_PUBLIC_USE_MOCKS=false` in `.env.local`, and do a full device pass.** Known gaps to handle then: `app/user/[id].tsx` now hides the distance when coordinates are private (0/0), so from Likes You / Matches there's no distance line (Discover has the server distance); daily limits reset at midnight UTC (mock uses local time), so the "resets at" countdown differs from mock; Play Date cards don't update live when the other person answers (they refetch on open; a `date_plans` realtime subscription would fix it). Dashboard to-do (yours): turn OFF "Allow public access" in Realtime settings (defense in depth; the live test already shows an outsider can't hear a match's typing). Before launch: custom SMTP (needs a domain) + turn "Confirm email" back on; then emailed codes / phone.
    **Later (you said "soon"), per the brief:** Supabase (real auth/DB/storage/realtime: add `createSupabaseServices()` and flip `EXPO_PUBLIC_USE_MOCKS=false`), Expo push (notification settings are already stored per user), photo verification and moderation, suggested venues for Play Dates, monetization. Supabase is the suggested first step since the rest builds on it.
 4. **Keep an eye on:** whether "empty Preferences section = no preference" feels intuitive in real use; dark mode on more screens by eye.
 
@@ -133,7 +133,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 ```bash
 npm install
 npm start            # scan the QR with Expo Go (use `npx expo start --tunnel` if your Wi-Fi blocks it)
-npm test             # 293 tests
+npm test             # 305 tests
 npm run typecheck && npm run lint
 ```
 Architecture and conventions live in `CLAUDE.md`.
