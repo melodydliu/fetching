@@ -7,3 +7,17 @@ export function moveItem<T>(items: readonly T[], from: number, to: number): T[] 
   next.splice(target, 0, moved!);
   return next;
 }
+
+/**
+ * Removes the item with `id`, unless that would leave fewer than `minToKeep`.
+ * `blocked` tells the caller why nothing changed so it can explain.
+ */
+export function removeItemKeepingMin<T extends { id: string }>(
+  items: readonly T[],
+  id: string,
+  minToKeep: number,
+): { items: T[]; blocked: boolean } {
+  if (!items.some((item) => item.id === id)) return { items: [...items], blocked: false };
+  if (items.length <= minToKeep) return { items: [...items], blocked: true };
+  return { items: items.filter((item) => item.id !== id), blocked: false };
+}

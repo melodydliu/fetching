@@ -176,7 +176,7 @@ function EditForm({ profile }: { profile: Profile }) {
         <ScreenHeader title="Edit profile" back />
         <Section
           title="Photos"
-          hint={`${config.minPhotos}–${config.maxPhotos} photos. Tap one to add a caption. Hold and drag to reorder.`}
+          hint={`${config.minPhotos}–${config.maxPhotos} photos. Tap one to add a caption, tap × to remove it. Hold and drag to reorder.`}
         >
           <PhotoGrid
             photos={draft.photos}

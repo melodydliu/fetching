@@ -11,9 +11,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { moveItem } from '@/domain/list';
+import { moveItem, removeItemKeepingMin } from '@/domain/list';
 import type { Photo } from '@/domain/types';
 import { useTheme } from '@/hooks/useTheme';
+import { useToastStore } from '@/state/toastStore';
 import { CaptionModal } from './CaptionModal';
 import { Icon } from './ui/Icon';
 import { PhotoView } from './ui/PhotoView';
@@ -40,7 +41,7 @@ interface PhotoGridProps {
   adding?: boolean;
   /** Singular noun for screen readers, e.g. "photo". */
   noun?: string;
-  /** Hide Remove once this many photos remain (e.g. the 3-photo minimum when editing). */
+  /** Remove explains instead of deleting once this many photos remain (e.g. the minimum when editing). */
   minToKeep?: number;
   /** Tap a photo to add or edit its caption. */
   captions?: boolean;
@@ -65,6 +66,7 @@ export function PhotoGrid({
   const activeIndex = useSharedValue(-1);
   const hoverIndex = useSharedValue(-1);
   const [captioningId, setCaptioningId] = useState<string | null>(null);
+  const toast = useToastStore((t) => t.show);
 
   const tileW = width > 0 ? (width - GAP * (COLUMNS - 1)) / COLUMNS : 0;
   const geometry: Geometry = { tileW, tileH: (tileW * 4) / 3, rows: Math.ceil(max / COLUMNS) };
@@ -79,7 +81,14 @@ export function PhotoGrid({
     hoverIndex.set(-1);
   };
 
-  const remove = (id: string) => onChange(photos.filter((p) => p.id !== id));
+  const remove = (id: string) => {
+    const result = removeItemKeepingMin(photos, id, minToKeep);
+    if (result.blocked) {
+      toast(`Keep at least ${minToKeep} ${noun}s. Add another first, then remove this one.`);
+      return;
+    }
+    onChange(result.items);
+  };
   const saveCaption = (caption: string | undefined) => {
     onChange(photos.map((p) => (p.id === captioningId ? { ...p, caption } : p)));
     setCaptioningId(null);
@@ -87,6 +96,7 @@ export function PhotoGrid({
 
   return (
     <View
+      testID="photo-grid"
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       style={{ height: Math.max(0, height) }}
     >
@@ -148,7 +158,6 @@ export function PhotoGrid({
             onReorder={reorder}
             onRemove={() => remove(photo.id)}
             noun={noun}
-            canRemove={photos.length > minToKeep}
             onCaptionPress={captions ? () => setCaptioningId(photo.id) : undefined}
           />
         ))}
@@ -173,7 +182,6 @@ interface TileProps {
   onReorder: (from: number, to: number) => void;
   onRemove: () => void;
   noun: string;
-  canRemove: boolean;
   onCaptionPress?: () => void;
 }
 
@@ -187,7 +195,6 @@ function DraggableTile({
   onReorder,
   onRemove,
   noun,
-  canRemove,
   onCaptionPress,
 }: TileProps) {
   const { colors, radii } = useTheme();
@@ -280,12 +287,12 @@ function DraggableTile({
           ...(index > 0 ? [{ name: 'moveEarlier', label: 'Move earlier' }] : []),
           ...(index < count - 1 ? [{ name: 'moveLater', label: 'Move later' }] : []),
           ...(onCaptionPress ? [{ name: 'caption', label: 'Edit caption' }] : []),
-          ...(canRemove ? [{ name: 'remove', label: `Remove ${noun}` }] : []),
+          { name: 'remove', label: `Remove ${noun}` },
         ]}
         onAccessibilityAction={(e) => {
           if (e.nativeEvent.actionName === 'moveEarlier') onReorder(index, index - 1);
           if (e.nativeEvent.actionName === 'moveLater') onReorder(index, index + 1);
-          if (e.nativeEvent.actionName === 'remove' && canRemove) onRemove();
+          if (e.nativeEvent.actionName === 'remove') onRemove();
           if (e.nativeEvent.actionName === 'caption') onCaptionPress?.();
         }}
         style={[
@@ -346,17 +353,15 @@ function DraggableTile({
             </Text>
           </View>
         )}
-        {canRemove && (
-          <Pressable
-            onPress={onRemove}
-            hitSlop={11}
-            accessibilityRole="button"
-            accessibilityLabel={`Remove ${noun} ${position}`}
-            style={[styles.remove, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          >
-            <Icon name="x" size={14} color={colors.text} />
-          </Pressable>
-        )}
+        <Pressable
+          onPress={onRemove}
+          hitSlop={11}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${noun} ${position}`}
+          style={[styles.remove, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          <Icon name="x" size={14} color={colors.text} />
+        </Pressable>
       </Animated.View>
     </GestureDetector>
   );
