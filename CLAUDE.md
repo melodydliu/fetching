@@ -83,7 +83,10 @@ All in `src/domain/matching/` (pure, no UI or services). Every weight lives in `
 
 ## Supabase (in progress)
 - Sign-in is **email + password** (`SignInCredentials`), in mock and real mode. The mock accepts any password. Real auth lives in `src/services/supabase/auth.ts`; the client is `getSupabase()` (one instance, AsyncStorage session). "Confirm email" is OFF in the dashboard for development only: turn it on with custom SMTP before launch. `@supabase/supabase-js` is pinned to an exact version on purpose.
-- `createSupabaseServices()` only has auth so far; other services throw "not built yet", so keep `EXPO_PUBLIC_USE_MOCKS=true` until they exist.
+- `createSupabaseServices()` has auth, users, pets and media; discovery, likes, matches and chat still throw "not built yet", so keep `EXPO_PUBLIC_USE_MOCKS=true` until they exist.
+- Row <-> domain mapping is pure and unit-tested in `src/services/supabase/mappers.ts`. `users.update`/`pets.update` also sync the `photos` and `prompt_answers` tables (diff, order = position, uploaded files removed with their photo). New client-made ids (`newId`) are UUIDs so they are valid primary keys.
+- **Other people's coordinates are 0/0 by design** (private); never compute distance from `user.location` of someone else. Use the server-provided distance.
+- Live tests hit the REAL project (throwaway accounts, self-cleaning): `set -a; source .env.local; set +a; RUN_LIVE_TESTS=1 npx jest src/services/supabase/__tests__/live`. They are skipped in `npm test`. (Jest stubs `fetch`, so the test installs `node-fetch`.)
 - `supabase/migrations/` is the source of truth for the database (create new ones with `supabase migration new <name>`; never edit one after it has been pushed). Run `supabase/tests/run.sh` after changing policies or triggers: it applies them to a throwaway local Postgres and checks the rules as different users.
 - Keys: `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_KEY` (publishable) live in `.env.local` (git-ignored). The service-role/secret key must never go in the app or in git; only local scripts may use it.
 - Rules that must not be client-trusted live in the database: daily like/Treat limits, match-on-mutual-like, block removes the match, Play Date edit/answer permissions. Error strings `like_quota_exceeded`, `treat_quota_exceeded`, `blocked`, `like_gone` map to the app's errors.
