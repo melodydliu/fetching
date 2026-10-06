@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SaveBar } from '@/components/SaveBar';
@@ -137,6 +137,7 @@ function PreferencesForm({ user }: { user: User }) {
   const { preferences: prefs, dealbreakers: db, allergies } = draft;
   const dirty = isDirty(user, draft);
   const { markSaved } = useDiscardGuard(dirty);
+  const navigation = useNavigation();
 
   const setPrefs = (patch: Partial<Preferences>) =>
     setDraft((d) => ({ ...d, preferences: { ...d.preferences, ...patch } }));
@@ -189,6 +190,8 @@ function PreferencesForm({ user }: { user: User }) {
               hi={config.maxAge}
               value={prefs.ageRange}
               onChange={(ageRange) => setPrefs({ ageRange })}
+              // Swiping the page back would steal the drag, so pause it while a finger is down.
+              onTouchingChange={(touching) => navigation.setOptions({ gestureEnabled: !touching })}
             />
           </View>
         </Section>

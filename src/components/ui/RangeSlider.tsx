@@ -41,12 +41,25 @@ interface RangeSliderProps {
   hi: number;
   value: Range;
   onChange: (next: Range) => void;
+  /**
+   * True while a finger is on the slider. A screen can use it to switch off the swipe-back
+   * gesture, which would otherwise fight the handles for the same horizontal drag.
+   */
+  onTouchingChange?: (touching: boolean) => void;
 }
 
 const THUMB = 28;
 
 /** Two-handle slider for a range (like an age range). Each handle is also adjustable by assistive tech. */
-export function RangeSlider({ minLabel, maxLabel, lo, hi, value, onChange }: RangeSliderProps) {
+export function RangeSlider({
+  minLabel,
+  maxLabel,
+  lo,
+  hi,
+  value,
+  onChange,
+  onTouchingChange,
+}: RangeSliderProps) {
   const { colors } = useTheme();
   const [width, setWidth] = useState(0);
   const usable = Math.max(width - THUMB, 0);
@@ -130,6 +143,9 @@ export function RangeSlider({ minLabel, maxLabel, lo, hi, value, onChange }: Ran
 
   return (
     <View
+      onTouchStart={() => onTouchingChange?.(true)}
+      onTouchEnd={() => onTouchingChange?.(false)}
+      onTouchCancel={() => onTouchingChange?.(false)}
       style={styles.wrap}
       onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}
     >

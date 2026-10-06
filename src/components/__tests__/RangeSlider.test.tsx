@@ -66,4 +66,24 @@ describe('RangeSlider', () => {
     expect(screen.getByLabelText('Oldest age').props.accessibilityValue.now).toBe(36);
     expect(screen.getByLabelText('Youngest age').props.accessibilityValue.now).toBe(24);
   });
+
+  it('reports when a finger is on the slider so the screen can pause swipe-back', async () => {
+    const onTouchingChange = jest.fn();
+    await renderWithApp(
+      <RangeSlider
+        minLabel="Youngest age"
+        maxLabel="Oldest age"
+        lo={18}
+        hi={98}
+        value={{ min: 25, max: 35 }}
+        onChange={() => {}}
+        onTouchingChange={onTouchingChange}
+      />,
+    );
+    const handle = screen.getByLabelText('Youngest age');
+    await fireEvent(handle, 'touchStart');
+    expect(onTouchingChange).toHaveBeenLastCalledWith(true);
+    await fireEvent(handle, 'touchEnd');
+    expect(onTouchingChange).toHaveBeenLastCalledWith(false);
+  });
 });
