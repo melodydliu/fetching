@@ -23,7 +23,7 @@ import {
   type ProfileBlock,
 } from '@/domain/profileBlocks';
 import type { ID, LikeTarget } from '@/domain/types';
-import { useCandidates, useLikeQuota, useViewerId } from '@/hooks/queries';
+import { useCandidates, useIncomingLikes, useLikeQuota, useViewerId } from '@/hooks/queries';
 import { useTheme } from '@/hooks/useTheme';
 import { AlreadyLikedError, QuotaExceededError, useServices } from '@/services';
 import { useToastStore } from '@/state/toastStore';
@@ -65,6 +65,9 @@ export default function DiscoverScreen() {
 
   const candidates = useCandidates();
   const quota = useLikeQuota();
+  // Only point people at Likes You when someone is actually waiting there.
+  const incomingLikes = useIncomingLikes();
+  const hasLikesWaiting = (incomingLikes.data?.length ?? 0) > 0;
   const [handled, setHandled] = useState<ReadonlySet<ID>>(new Set());
   const [liking, setLiking] = useState<LikeDraft | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
@@ -202,9 +205,11 @@ export default function DiscoverScreen() {
             <EmptyState
               illustration="tennis-ball"
               title="You're out of likes for today"
-              body={`Fresh likes and your next Treat arrive ${resetsIn(q?.resetsAt)}. In the meantime, see who's already into you.`}
-              actionLabel="See Likes You"
-              onAction={() => router.navigate('/likes')}
+              body={`Fresh likes and your next Treat arrive ${resetsIn(q?.resetsAt)}.${
+                hasLikesWaiting ? " In the meantime, see who's already into you." : ''
+              }`}
+              actionLabel={hasLikesWaiting ? 'See Who Likes You' : undefined}
+              onAction={hasLikesWaiting ? () => router.navigate('/likes') : undefined}
             />
           </View>
         ) : !current ? (
@@ -217,11 +222,13 @@ export default function DiscoverScreen() {
               <EmptyState
                 illustration="tennis-ball"
                 title="You've seen everyone nearby"
-                body="New people and pets join every day. Check back soon, or see who's liked you."
+                body={`New people and pets join every day. Check back soon${
+                  hasLikesWaiting ? ", or see who's liked you." : '!'
+                }`}
                 actionLabel="Refresh"
                 onAction={() => void candidates.refetch()}
-                secondaryLabel="See Likes You"
-                onSecondary={() => router.navigate('/likes')}
+                secondaryLabel={hasLikesWaiting ? 'See Who Likes You' : undefined}
+                onSecondary={hasLikesWaiting ? () => router.navigate('/likes') : undefined}
               />
             </View>
           )

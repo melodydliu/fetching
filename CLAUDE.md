@@ -37,6 +37,7 @@ src/state/          Zustand: devStore (forced empty states), toastStore.
 - Matching/compatibility = pure functions in `src/domain/matching`, unit-tested. Weights in one config object. Unknown/"unsure" is neutral, never a penalty.
 - Style via `useTheme()` tokens. No hard-coded colors or font names in screens. Support dark mode.
 - Every list screen needs real loading (Skeleton), empty (EmptyState) and error (ErrorState) states.
+- Keyboard: any screen with text fields should use `<Screen scroll>`, which makes room for the keyboard and scrolls the focused field into view (iOS `automaticallyAdjustKeyboardInsets`; Android resizes) and keeps buttons tappable with the keyboard open. Bottom sheets/modals with inputs wrap their content in `KeyboardAvoidingView` instead.
 - Accessibility: pressables get `accessibilityRole` + label, tap targets >= 48pt, decorative SVGs `aria-hidden`.
 - Haptics on like/match (`expo-haptics`; Button does a light tap by default).
 - Path alias `@/` -> `src/`. Prettier: single quotes, 100 cols.
