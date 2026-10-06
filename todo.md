@@ -1,13 +1,13 @@
 # Fetching: status and to-do
 
 A dating app for people whose pets are family. Expo SDK 57 + React Native + TypeScript, running entirely on mock services.
-Last updated after Phase 4, the phone check and the pet-sheet restyle. 291 unit tests passing across 25 suites (+5 live Supabase tests, skipped unless asked); typecheck and lint clean.
+Last updated after Phase 4, the phone check and the pet-sheet restyle. 293 unit tests passing across 25 suites (+11 live Supabase tests, skipped unless asked); typecheck and lint clean.
 
 ## What's left (start here)
 All four build phases are code-complete, and you've checked the app on a phone in Expo Go ("everything looks good so far"). Decisions made: keep the Preferences model as is (an empty section = no preference; the Dealbreaker switch makes a section strict; pet filters already apply to animal lovers), keep the tinted "Meet [pet]" panel, and the pet-bubble sheet now matches that panel exactly.
 1. **Small extras (you said "soon"):** real rabbit/bird seed photos, a "like the whole profile" type, optional photos for animal lovers.
 2. **Branding (you're handling):** app icon and splash, the app name (one constant in `src/config` plus `app.json`), commissioned illustrations.
-3. **In progress: Supabase.** Project is live with the schema, security rules, like/match rules and photo bucket (`supabase/migrations/`, tested by `supabase/tests/run.sh`). **Built and verified against the real project:** email + password auth, and the users (profile, prompts, blocks, reports), pets and media (Storage upload) repositories (`src/services/supabase/`; live tests below). Still "not built yet" placeholders (keep `EXPO_PUBLIC_USE_MOCKS=true` for normal use): discovery, likes, matches, chat. Next, in order: likes/matches/discovery (needs a server-side candidate pool with distances, since exact locations are private; `app/user/[id].tsx` currently computes distance from both users' coordinates and must switch to the server value) → chat + realtime (typing = Realtime broadcast) → seed/cleanup scripts (seed users are tagged `is_seed`) → then flip `EXPO_PUBLIC_USE_MOCKS=false` and do a full device pass. Onboarding must also save the user's coordinates (`users.update` with `location` writes the private `profile_locations` row). Before launch: custom SMTP (needs a domain) + turn "Confirm email" back on; then emailed codes / phone.
+3. **In progress: Supabase.** Project is live with the schema, security rules, like/match rules, photo bucket, `discovery_distances()` and the `match_summaries` view (`supabase/migrations/`, tested by `supabase/tests/run.sh`, 58 checks). **Built and verified against the real project (`src/services/supabase/`, 11 live tests):** email + password auth, users/pets/media, discovery (server-measured distance), likes (quotas, Likes You, like back, remove), matches (list, unmatch). **Still a "not built yet" placeholder: chat** (messages, realtime, typing = Realtime broadcast, Play Dates). Next, in order: chat + realtime → seed/cleanup scripts (seed users are tagged `is_seed`; needed so a real-mode Discover isn't empty) → flip `EXPO_PUBLIC_USE_MOCKS=false` and do a full device pass. Known gaps to handle then: `app/user/[id].tsx` still computes distance from both users' coordinates (must use the server distance; the other person's coordinates are 0/0); daily limits reset at midnight UTC (mock uses local time), so the "resets at" countdown differs from mock; onboarding must save the user's coordinates (done via `users.update({ location })`). Before launch: custom SMTP (needs a domain) + turn "Confirm email" back on; then emailed codes / phone.
    **Later (you said "soon"), per the brief:** Supabase (real auth/DB/storage/realtime: add `createSupabaseServices()` and flip `EXPO_PUBLIC_USE_MOCKS=false`), Expo push (notification settings are already stored per user), photo verification and moderation, suggested venues for Play Dates, monetization. Supabase is the suggested first step since the rest builds on it.
 4. **Keep an eye on:** whether "empty Preferences section = no preference" feels intuitive in real use; dark mode on more screens by eye.
 
@@ -133,7 +133,7 @@ Layout inspired by `design-inspo/Profile-Inspo.png`, kept original to Fetching.
 ```bash
 npm install
 npm start            # scan the QR with Expo Go (use `npx expo start --tunnel` if your Wi-Fi blocks it)
-npm test             # 291 tests
+npm test             # 293 tests
 npm run typecheck && npm run lint
 ```
 Architecture and conventions live in `CLAUDE.md`.

@@ -10,34 +10,17 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { config } from '@/config';
 import { newId } from '@/utils/id';
 import { createSupabaseServices } from '..';
+import { installLiveFetch, LIVE, PHOTO_URI } from '@/test/liveSupport';
 import type { Services } from '../../types';
-
-// 1x1 transparent PNG.
-const PNG_BASE64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
-// Jest's Expo preset stubs out `fetch`, so install a real one before any client is created.
-// node-fetch can't read local files, so a file:// URI (what the phone's photo picker returns)
-// is answered with a tiny PNG instead.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const nodeFetch = require('node-fetch') as typeof fetch;
-const PHOTO_URI = 'file:///sample/photo.png';
-if (process.env.RUN_LIVE_TESTS === '1') {
-  globalThis.fetch = ((input: Parameters<typeof fetch>[0], init?: RequestInit) => {
-    if (input === PHOTO_URI) {
-      const bytes = Uint8Array.from(atob(PNG_BASE64), (c) => c.charCodeAt(0));
-      return Promise.resolve({ arrayBuffer: async () => bytes.buffer } as Response);
-    }
-    return nodeFetch(input, init);
-  }) as typeof fetch;
-}
+installLiveFetch();
 
-const live = process.env.RUN_LIVE_TESTS === '1' ? describe : describe.skip;
+const live = LIVE ? describe : describe.skip;
 
 live('Supabase repositories (live)', () => {
   jest.setTimeout(60_000);

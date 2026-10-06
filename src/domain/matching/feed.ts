@@ -18,7 +18,10 @@ export function buildFeed(
 ): RankedCandidate[] {
   const ranked: RankedCandidate[] = [];
   for (const candidate of pool) {
-    const miles = distanceMiles(viewer.user.location, candidate.user.location);
+    const miles = ctx.distances
+      ? ctx.distances.get(candidate.user.id)
+      : distanceMiles(viewer.user.location, candidate.user.location);
+    if (miles === undefined) continue; // the server didn't put them in range
     const result = applyHardFilters(viewer, candidate, {
       now: ctx.now,
       distanceMiles: miles,

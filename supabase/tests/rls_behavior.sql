@@ -172,3 +172,77 @@ begin
   perform testh.fails('delete_my_account needs a signed-in user', 'select public.delete_my_account()', 'not_authenticated');
   raise notice 'ALL DONE';
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- discovery_distances + match_summaries
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  x1 uuid := '10000000-0000-0000-0000-000000000001'; -- San Francisco, wants <= 25 mi
+  x2 uuid := '10000000-0000-0000-0000-000000000002'; -- Oakland (~8 mi), 25 mi
+  x3 uuid := '10000000-0000-0000-0000-000000000003'; -- San Jose (~42 mi), 100 mi: too far for x1
+  x4 uuid := '10000000-0000-0000-0000-000000000004'; -- Daly City (~6 mi) but only wants 3 mi
+  x5 uuid := '10000000-0000-0000-0000-000000000005'; -- paused, nearby
+  x6 uuid := '10000000-0000-0000-0000-000000000006'; -- blocked by x1, nearby
+  x7 uuid := '10000000-0000-0000-0000-000000000007'; -- not onboarded, nearby
+  x8 uuid := '10000000-0000-0000-0000-000000000008'; -- no location at all
+  ids uuid[]; rec record; m uuid; cnt int;
+begin
+  perform testh.as_admin();
+  insert into auth.users (id) select unnest(array[x1,x2,x3,x4,x5,x6,x7,x8]);
+  update public.profiles set onboarding_complete = true,
+    preferences = '{"maxDistanceMiles": 25}'::jsonb
+    where id in (x1, x2, x5, x6);
+  update public.profiles set onboarding_complete = true, preferences = '{"maxDistanceMiles": 100}'::jsonb where id = x3;
+  update public.profiles set onboarding_complete = true, preferences = '{"maxDistanceMiles": 3}'::jsonb where id = x4;
+  update public.profiles set onboarding_complete = true, paused = true where id = x5;
+  update public.profiles set onboarding_complete = true where id in (x8);
+  insert into public.profile_locations (user_id, lat, lng) values
+    (x1, 37.7749, -122.4194), (x2, 37.8044, -122.2712), (x3, 37.3382, -121.8863),
+    (x4, 37.6879, -122.4702), (x5, 37.7800, -122.4100), (x6, 37.7760, -122.4180),
+    (x7, 37.7790, -122.4150);
+  insert into public.blocks (blocker_id, blocked_id) values (x1, x6);
+
+  perform testh.as_user(x1);
+  select array_agg(user_id) into ids from public.discovery_distances() where user_id::text like '10000000%';
+  perform testh.ok('only people in range of BOTH, visible and unblocked are returned', ids = array[x2]);
+  select distance_miles into rec from public.discovery_distances() where user_id = x2;
+  perform testh.ok('distance is rounded UP to whole miles (Oakland is ~8.4)', rec.distance_miles = 9);
+  perform testh.ok('result has no coordinate columns', (select count(*) from information_schema.columns where table_name = 'discovery_distances') = 0
+    and (select pg_get_function_result('public.discovery_distances(int)'::regprocedure)) = 'TABLE(user_id uuid, distance_miles integer)');
+
+  perform testh.as_user(x2);
+  perform testh.ok('it is symmetric: Oakland sees SF at the same rounded distance',
+    (select distance_miles from public.discovery_distances() where user_id = x1) = 9);
+
+  perform testh.as_user(x8);
+  perform testh.ok('someone with no stored location gets nothing', testh.n('select 1 from public.discovery_distances()') = 0);
+
+  perform testh.as_user(x3);
+  perform testh.ok('a 100-mile user is still not shown people who only want <= 25', testh.n('select 1 from public.discovery_distances() where user_id in (''' || x1 || ''', ''' || x2 || ''')') = 0);
+
+  perform testh.as_user(x1);
+  select count(*) into cnt from public.discovery_distances(1);
+  perform testh.ok('p_limit is respected', cnt <= 1);
+
+  execute 'set role anon';
+  perform testh.fails('signed-out callers cannot call it', 'select * from public.discovery_distances()', 'permission denied');
+  perform testh.as_admin();
+
+  -- match_summaries
+  insert into public.matches (user_a, user_b) values (least(x1, x2), greatest(x1, x2)) returning id into m;
+  perform testh.as_user(x1);
+  perform testh.ok('a match with no messages has no last message', (select last_message_id is null from public.match_summaries where match_id = m));
+  perform testh.as_user(x2);
+  insert into public.messages (match_id, sender_id, body, created_at) values (m, x2, 'first', now() - interval '1 minute');
+  insert into public.messages (match_id, sender_id, body, created_at) values (m, x2, 'second', now());
+  perform testh.as_user(x1);
+  perform testh.ok('summary shows the LATEST message and who sent it',
+    (select last_body = 'second' and last_sender_id = x2 from public.match_summaries where match_id = m));
+  perform testh.as_user(x3);
+  perform testh.ok('outsiders see no summaries (row-level security carries through the view)', testh.n('select 1 from public.match_summaries') = 0);
+  execute 'set role anon';
+  perform testh.fails('signed-out callers cannot read summaries', 'select * from public.match_summaries', 'permission denied');
+  perform testh.as_admin();
+  raise notice 'DISCOVERY DONE';
+end $$;

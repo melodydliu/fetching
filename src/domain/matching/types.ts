@@ -35,4 +35,10 @@ export interface FeedContext {
   excludedIds: ReadonlySet<ID>;
   /** People who already liked the viewer. */
   incomingLikes: ReadonlyMap<ID, LikedYou>;
+  /**
+   * Distances in miles computed by the server (real backend: coordinates are private, so the
+   * app can't work them out). When given, only people with an entry are considered. When
+   * omitted (mock mode) distance comes from the two users' coordinates.
+   */
+  distances?: ReadonlyMap<ID, number>;
 }

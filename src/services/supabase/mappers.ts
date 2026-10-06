@@ -3,7 +3,8 @@
  * Column names are snake_case in Postgres, camelCase in the app.
  */
 import { defaultDealbreakers, defaultNotifications, defaultPreferences } from '@/domain/defaults';
-import type { Pet, Photo, PromptAnswer, User } from '@/domain/types';
+import type { Like, Match, Message, Pet, Photo, PromptAnswer, User } from '@/domain/types';
+import type { MatchSummary } from '../types';
 
 export interface PhotoRow {
   id: string;
@@ -195,4 +196,106 @@ export function storagePathFromUrl(url: string, bucket = 'photos'): string | nul
   const marker = `/storage/v1/object/public/${bucket}/`;
   const at = url.indexOf(marker);
   return at === -1 ? null : decodeURIComponent(url.slice(at + marker.length).split('?')[0]!);
+}
+
+// ---------------------------------------------------------------------------
+// likes, matches, messages
+// ---------------------------------------------------------------------------
+export interface LikeRow {
+  id: string;
+  from_user_id: string;
+  to_user_id: string;
+  target_type: 'photo' | 'prompt' | 'pet';
+  target_id: string;
+  comment: string | null;
+  is_treat: boolean;
+  removed_at: string | null;
+  created_at: string;
+}
+
+export const likeFromRow = (row: LikeRow): Like => ({
+  id: row.id,
+  fromUserId: row.from_user_id,
+  toUserId: row.to_user_id,
+  target: { type: row.target_type, id: row.target_id },
+  ...(row.comment ? { comment: row.comment } : {}),
+  isTreat: row.is_treat,
+  createdAt: row.created_at,
+});
+
+export interface MatchRow {
+  id: string;
+  user_a: string;
+  user_b: string;
+  created_at: string;
+}
+
+export const matchFromRow = (row: MatchRow): Match => ({
+  id: row.id,
+  userIds: [row.user_a, row.user_b],
+  createdAt: row.created_at,
+});
+
+export interface MessageRow {
+  id: string;
+  match_id: string;
+  sender_id: string;
+  kind: Message['kind'];
+  body: string | null;
+  date_plan_id: string | null;
+  created_at: string;
+  read_at: string | null;
+}
+
+export const messageFromRow = (row: MessageRow): Message => ({
+  id: row.id,
+  matchId: row.match_id,
+  senderId: row.sender_id,
+  kind: row.kind,
+  ...(row.body !== null ? { text: row.body } : {}),
+  ...(row.date_plan_id ? { datePlanId: row.date_plan_id } : {}),
+  createdAt: row.created_at,
+  ...(row.read_at ? { readAt: row.read_at } : {}),
+});
+
+/** One row of the `match_summaries` view. */
+export interface MatchSummaryRow {
+  match_id: string;
+  user_a: string;
+  user_b: string;
+  matched_at: string;
+  last_message_id: string | null;
+  last_sender_id: string | null;
+  last_kind: Message['kind'] | null;
+  last_body: string | null;
+  last_date_plan_id: string | null;
+  last_message_at: string | null;
+  last_read_at: string | null;
+}
+
+export function matchSummaryFromRow(row: MatchSummaryRow, viewerId: string): MatchSummary {
+  const lastMessage: Message | undefined = row.last_message_id
+    ? messageFromRow({
+        id: row.last_message_id,
+        match_id: row.match_id,
+        sender_id: row.last_sender_id!,
+        kind: row.last_kind!,
+        body: row.last_body,
+        date_plan_id: row.last_date_plan_id,
+        created_at: row.last_message_at!,
+        read_at: row.last_read_at,
+      })
+    : undefined;
+  return {
+    match: matchFromRow({
+      id: row.match_id,
+      user_a: row.user_a,
+      user_b: row.user_b,
+      created_at: row.matched_at,
+    }),
+    otherUserId: row.user_a === viewerId ? row.user_b : row.user_a,
+    lastMessage,
+    yourTurn: !!lastMessage && lastMessage.senderId !== viewerId,
+    isNew: !lastMessage,
+  };
 }

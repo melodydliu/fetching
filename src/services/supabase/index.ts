@@ -1,6 +1,10 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Services } from '../types';
 import { createSupabaseAuth } from './auth';
 import { getSupabase } from './client';
+import { createSupabaseDiscovery } from './discovery';
+import { createSupabaseLikes } from './likes';
+import { createSupabaseMatches } from './matches';
 import { createSupabaseMedia } from './media';
 import { createSupabasePets } from './pets';
 import { createSupabaseUsers } from './users';
@@ -15,19 +19,19 @@ function notReady<T extends object>(name: string): T {
 }
 
 /**
- * Real services. Built one at a time: auth, users/pets/media done; discovery, likes, matches
- * and chat still to come.
+ * Real services. Built one at a time: auth, users, pets, media, discovery, likes and matches
+ * are done; chat is still to come.
  * Until all exist, keep EXPO_PUBLIC_USE_MOCKS=true for normal use.
  */
-export function createSupabaseServices(): Services {
-  const supabase = getSupabase();
+export function createSupabaseServices(supabase: SupabaseClient = getSupabase()): Services {
+  const users = createSupabaseUsers(supabase);
   return {
     auth: createSupabaseAuth(supabase),
-    users: createSupabaseUsers(supabase),
+    users,
     pets: createSupabasePets(supabase),
-    discovery: notReady('discovery'),
-    likes: notReady('likes'),
-    matches: notReady('matches'),
+    discovery: createSupabaseDiscovery(supabase, users),
+    likes: createSupabaseLikes(supabase),
+    matches: createSupabaseMatches(supabase),
     chat: notReady('chat'),
     media: createSupabaseMedia(supabase),
   };

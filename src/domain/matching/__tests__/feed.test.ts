@@ -19,6 +19,47 @@ describe('buildFeed', () => {
     expect(feed.map((f) => f.profile.user.id)).toEqual([ok.user.id]);
   });
 
+  describe('with server-provided distances (real backend, private coordinates)', () => {
+    it('only considers people the server measured, and uses its distance', () => {
+      const near = makeCandidate();
+      const farAway = makeCandidate();
+      const unmeasured = makeCandidate();
+      const feed = buildFeed(makeViewer(), [near, farAway, unmeasured], {
+        ...ctx,
+        distances: new Map([
+          [near.user.id, 3],
+          [farAway.user.id, 20],
+        ]),
+      });
+      expect(feed.map((f) => [f.profile.user.id, f.distanceMiles])).toEqual(
+        expect.arrayContaining([
+          [near.user.id, 3],
+          [farAway.user.id, 20],
+        ]),
+      );
+      expect(feed.map((f) => f.profile.user.id)).not.toContain(unmeasured.user.id);
+    });
+
+    it('still applies the distance rule using the server distance, and ranks closer higher', () => {
+      const viewer = makeViewer();
+      const close = makeCandidate();
+      const edge = makeCandidate();
+      const tooFar = makeCandidate();
+      const max = viewer.user.preferences.maxDistanceMiles;
+      const feed = buildFeed(viewer, [close, edge, tooFar], {
+        ...ctx,
+        distances: new Map([
+          [close.user.id, 1],
+          [edge.user.id, max - 1],
+          [tooFar.user.id, max + 5],
+        ]),
+      });
+      const ids = feed.map((f) => f.profile.user.id);
+      expect(ids).not.toContain(tooFar.user.id);
+      expect(ids.indexOf(close.user.id)).toBeLessThan(ids.indexOf(edge.user.id));
+    });
+  });
+
   it('never includes excluded people', () => {
     const a = makeCandidate();
     const b = makeCandidate();
