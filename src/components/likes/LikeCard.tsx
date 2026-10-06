@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: '38%',
-    backgroundColor: 'rgba(20, 10, 24, 0.62)',
+    backgroundColor: 'rgba(8, 24, 32, 0.62)',
   },
   badge: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 4 },
   info: { position: 'absolute', left: 0, right: 0, bottom: 0, gap: 2 },

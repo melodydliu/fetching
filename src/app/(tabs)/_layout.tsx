@@ -6,7 +6,7 @@ import { useIncomingLikes, useMatches } from '@/hooks/queries';
 import { useTheme } from '@/hooks/useTheme';
 
 /**
- * Headless tabs with a floating pill bar. Icon-only: the active tab sits in a berry capsule,
+ * Headless tabs with a floating pill bar. Icon-only: the active tab sits in a coral capsule,
  * and every tab keeps its screen-reader label.
  */
 export default function TabsLayout() {
