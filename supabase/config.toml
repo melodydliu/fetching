@@ -1,0 +1,14 @@
+# Deliberately minimal. `supabase config push` sends every property declared here, so only
+# declare what we mean to manage from code; everything else stays as set in the dashboard.
+# Always run `supabase config diff` and read it before any push.
+project_id = "fetching"
+
+# Sign-in codes by email. Supabase refuses template changes on free projects that use the
+# default email sender, so enable these once custom SMTP (needs a sending domain) is set up.
+# [auth.email.template.confirmation]
+# subject = "Your Fetching code"
+# content_path = "./supabase/templates/code.html"
+#
+# [auth.email.template.magic_link]
+# subject = "Your Fetching code"
+# content_path = "./supabase/templates/code.html"

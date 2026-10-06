@@ -81,6 +81,13 @@ All in `src/domain/matching/` (pure, no UI or services). Every weight lives in `
 - Web quirk: the expo-router tab slot grows to fit content, so a screen with something pinned to the bottom (Discover's Skip/Like) caps its own height on web.
 - Component tests: `src/test/render.tsx` (`renderWithApp`, mock services, fresh query cache); Reanimated/worklets are mocked in `jest.setup.ts`. RNTL v14 is async: `await render/fireEvent`.
 
+## Supabase (in progress)
+- `supabase/migrations/` is the source of truth for the database (create new ones with `supabase migration new <name>`; never edit one after it has been pushed). Run `supabase/tests/run.sh` after changing policies or triggers: it applies them to a throwaway local Postgres and checks the rules as different users.
+- Keys: `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_KEY` (publishable) live in `.env.local` (git-ignored). The service-role/secret key must never go in the app or in git; only local scripts may use it.
+- Rules that must not be client-trusted live in the database: daily like/Treat limits, match-on-mutual-like, block removes the match, Play Date edit/answer permissions. Error strings `like_quota_exceeded`, `treat_quota_exceeded`, `blocked`, `like_gone` map to the app's errors.
+- Exact coordinates are in `profile_locations` (owner-only). Other people only get `city`; distances must be computed server-side.
+- Seed/test accounts are real auth users created with `app_metadata.is_seed = true`; one cleanup script deletes exactly those (cascades remove their data).
+
 ## Mock accounts
 Logins are remembered per account (`MockDb.accounts`). Log in with `config.demoAccountEmail` for the seeded demo user; an account you create via onboarding is only reachable with the phone/email you made it with. Unknown logins fail, like a real backend.
 
